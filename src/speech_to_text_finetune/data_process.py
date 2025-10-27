@@ -74,7 +74,7 @@ def _get_local_proc_dataset_path(dataset_id: str) -> Path:
 
 
 def load_dataset_from_dataset_id(
-    dataset_id: str,
+    dataset_id: str, is_spontaneous_speech: bool = False
 ) -> Tuple[DatasetDict, Path]:
     """
     This function loads a dataset, based on the dataset_id and the content of its directory (if it is a local path).
@@ -87,6 +87,7 @@ def load_dataset_from_dataset_id(
 
     Args:
         dataset_id: Path to a processed dataset directory or local dataset directory or HuggingFace dataset ID.
+        is_spontaneous_speech: Whether the Common Voice dataset is spontaneous speech (SCS) or scripted speech (SPS).
 
     Returns:
         DatasetDict: A processed dataset ready for training with train/test splits
@@ -95,14 +96,15 @@ def load_dataset_from_dataset_id(
     Raises:
         ValueError: If the dataset cannot be found locally or on HuggingFace
     """
+
     try:
-        dataset = _load_mdc_common_voice(dataset_id)
+        dataset = _load_mdc_common_voice(dataset_id, is_spontaneous_speech)
         return dataset, _get_mdc_proc_dataset_path(dataset_id)
     except Exception:
         pass
 
     try:
-        dataset = _load_local_common_voice(dataset_id)
+        dataset = _load_local_common_voice(dataset_id, is_spontaneous_speech)
         return dataset, _get_local_proc_dataset_path(dataset_id)
     except FileNotFoundError:
         pass
@@ -117,78 +119,140 @@ def load_dataset_from_dataset_id(
         f"Could not find dataset {dataset_id} locally or at MDC."
     )
 
-
-def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
+def _load_mdc_common_voice(dataset_id: str, is_spontaneous_speech: bool) -> DatasetDict:
     """
-    Load the default train+validation split used for finetuning and a test split used for evaluation.
+    Shared loader for MDC-hosted Common Voice (SPS/SCS).
+    Load MDC dataset once and return a single DataFrame with `splits`,
+    the audio base directory and the audio column name.
 
     Args:
         dataset_id: official Common Voice dataset id from the Mozilla Data Collective
+        is_spontaneous_speech: whether the Common Voice dataset is spontaneous speech (SCS) or scripted speech (SPS)
 
     Returns:
         DatasetDict: HF Dataset dictionary that consists of two distinct Datasets
+        with columns "audio" and "sentence"
     """
     mdc_client = DataCollective()
-    # Download if not exists and uncompress dataset
     dataset = mdc_client.load_dataset(dataset_id)
     dataset_df = dataset.to_pandas()
-    data_dir = dataset.directory
+    data_dir = Path(dataset.directory)
 
-    train_df = dataset_df[dataset_df["splits"] == "train"]
-    test_df = dataset_df[dataset_df["splits"] == "test"]
-    if test_df.empty:
-        test_df = dataset_df[dataset_df["splits"] == "dev"]
+    if is_spontaneous_speech:
+        audio_dir = data_dir / "audios"
+        audio_clip_column = "audio_file"
+    else:
+        audio_dir = data_dir / "clips"
+        audio_clip_column = "path"
 
-    # TODO: add validation for cases SPS or SCS
-    # SPS: audio_file
-    # SCS: path
-    train_df = train_df.rename(columns={"audio_file": "audio"})
-    train_df["audio"] = train_df["audio"].apply(
-        # SPS: audios/
-        # SCS: clips/
-        lambda p: os.path.join(data_dir, "audio_file", p)
+    return _build_cv_dataset_from_df(
+        dataset_df=dataset_df,
+        audio_dir=audio_dir,
+        audio_clip_column=audio_clip_column,
+        is_spontaneous_speech=is_spontaneous_speech,
     )
-    # TODO: Add preprocess test
-    common_voice = DatasetDict(
-        {
-            "train": Dataset.from_pandas(train_df),
-        }
-    )
-    # TODO: update to use MDC SDK
-    return common_voice
 
 
-def _load_local_common_voice(cv_data_dir: str) -> DatasetDict:
+def _load_local_common_voice(cv_data_dir: str, is_spontaneous_speech: bool) -> DatasetDict:
     """
-    Load a local Common Voice dataset (as downloaded from the official Common Voice website) into a DatasetDict.
-    We only use the validated.tsv file to source the data to use for both training and testing.
-
-    Args:
-        cv_data_dir (str): path to the local Common Voice dataset directory
-
-    Returns:
-        DatasetDict: HF Dataset dictionary that consists of two distinct Datasets (train+validation and test)
+    Shared loader for local Common Voice (SPS/SCS).
+    Build a single DataFrame with `splits` for local Common Voice.
+    - SPS: scan `ss-corpus*.tsv` that already contains splits
+    - SCS: read `train.tsv`, `dev.tsv`, `test.tsv` and add a `splits` column
     """
-    cv_data_dir = Path(cv_data_dir)
-    train_df = pd.read_csv(cv_data_dir / "train.tsv", sep="\t")
-    test_df = pd.read_csv(cv_data_dir / "test.tsv", sep="\t")
+    cv_dir = Path(cv_data_dir)
 
-    # Replace relative path with absolute
-    train_df = train_df.rename(columns={"path": "audio"})
-    train_df["audio"] = train_df["audio"].apply(
-        lambda p: str(cv_data_dir / "clips" / p)
+    if is_spontaneous_speech:
+        dataset_df = None
+        for file in cv_dir.iterdir():
+            if file.is_file() and file.name.startswith("ss-corpus") and file.name.endswith(".tsv"):
+                dataset_df = pd.read_csv(file, sep="\t")
+                break
+        if dataset_df is None:
+            raise FileNotFoundError("Could not find SCS `ss-corpus*.tsv` file.")
+        audio_dir = cv_dir / "audios"
+        audio_clip_column = "audio_file"
+    else:
+        train_df = pd.read_csv(cv_dir / "train.tsv", sep="\t")
+        train_df["splits"] = "train"
+
+        dev_df = pd.read_csv(cv_dir / "dev.tsv", sep="\t")
+        dev_df["splits"] = "dev"
+
+        test_df = pd.read_csv(cv_dir / "test.tsv", sep="\t")
+        test_df["splits"] = "test"
+
+        dataset_df = pd.concat([train_df, dev_df, test_df], ignore_index=True)
+        audio_dir = cv_dir / "clips"
+        audio_clip_column = "path"
+
+    return _build_cv_dataset_from_df(
+        dataset_df=dataset_df,
+        audio_dir=audio_dir,
+        audio_clip_column=audio_clip_column,
+        is_spontaneous_speech=is_spontaneous_speech,
     )
 
-    test_df = test_df.rename(columns={"path": "audio"})
-    test_df["audio"] = test_df["audio"].apply(
-        lambda p: str(cv_data_dir / "clips" / p))
+
+def _build_cv_dataset_from_df(
+    dataset_df: pd.DataFrame,
+    audio_dir: str | Path,
+    audio_clip_column: str,
+    is_spontaneous_speech: bool,
+) -> DatasetDict:
+    """
+    Common builder for Common Voice Spontaneous and Scripted Speech, MDC or local.
+    - Renames text column to `sentence` (handles SPS's column name `transcription`)
+    - Converts audio paths to absolute
+    - Merges train+dev and keeps test
+    - Returns DatasetDict with only `audio` and `sentence`
+    """
+    df = dataset_df.copy()
+
+    # Normalize text column name
+    if is_spontaneous_speech and "transcription" in df.columns:
+        df = df.rename(columns={"transcription": "sentence"})
+
+    # Ensure we have splits
+    if "splits" not in df.columns:
+        raise ValueError("Expected a 'splits' column in the dataset DataFrame.")
+
+    # Convert relative to absolute audio paths
+    df = _replace_rel_path_with_abs_path(
+        df=df, audio_dir=audio_dir, audio_clip_column=audio_clip_column
+    )
+
+    # Split and keep only relevant columns
+    train_df = df[df["splits"].isin(["train", "dev"])][["audio", "sentence"]]
+    test_df = df[df["splits"] == "test"][["audio", "sentence"]]
 
     return DatasetDict(
         {
-            "train": Dataset.from_pandas(train_df),
-            "test": Dataset.from_pandas(test_df),
+            "train": Dataset.from_pandas(train_df, preserve_index=False),
+            "test": Dataset.from_pandas(test_df, preserve_index=False),
         }
     )
+
+def _join_audio_path(audio_dir: Path, rel_path: str) -> str:
+    """
+    Safely join base audio directory with the relative file path.
+    Keeps absolute paths as-is and resolves the result.
+    """
+    p = str(rel_path)
+    if os.path.isabs(p):
+        return p
+    return str((audio_dir / p).resolve())
+
+def _replace_rel_path_with_abs_path(
+    df: pd.DataFrame, audio_dir: str | Path, audio_clip_column: str
+) -> pd.DataFrame:
+    """
+    Rename the audio column and convert relative file paths to absolute paths.
+    """
+    df = df.rename(columns={audio_clip_column: "audio"})
+    base = Path(audio_dir)
+    df["audio"] = df["audio"].apply(lambda p: _join_audio_path(base, p))
+    return df
 
 
 def _get_audio_files_from_dir(dataset_dir: str) -> List[str]:
