@@ -7,15 +7,10 @@ import pandas as pd
 import torch
 from datacollective import DataCollective
 from datasets import Audio, Dataset, DatasetDict, load_dataset, load_from_disk
-from huggingface_hub.errors import HFValidationError
 from loguru import logger
 from transformers import WhisperProcessor
 
 from speech_to_text_finetune.config import PROC_DATASET_DIR
-
-
-def _get_mdc_client() -> DataCollective:
-    return DataCollective()
 
 
 def try_find_processed_version(
@@ -23,7 +18,7 @@ def try_find_processed_version(
 ) -> DatasetDict | Dataset | None:
     """
     Try to load a processed version of the dataset if it exists locally. Check if:
-    1. The dataset_id is a local path to an already processed dataset directory.
+    1. The dataset_id is a local path to a processed dataset directory.
     or
     2. The dataset_id is a path to a local dataset, but a processed version already exists locally.
     or
@@ -68,8 +63,8 @@ def _get_mdc_proc_dataset_path(dataset_id: str) -> Path:
     return Path(f"./artifacts/{dataset_id.replace('/', '_')}/{PROC_DATASET_DIR}")
 
 
-def _get_hf_proc_dataset_path(dataset_id: str, language_id: str) -> Path:
-    return Path(
+def _get_hf_proc_dataset_path(dataset_id: str, language_id: str) -> str:
+    return (
         f"./artifacts/{language_id}_{dataset_id.replace('/', '_')}/{PROC_DATASET_DIR}"
     )
 
@@ -80,7 +75,6 @@ def _get_local_proc_dataset_path(dataset_id: str) -> Path:
 
 def load_dataset_from_dataset_id(
     dataset_id: str,
-    language_id: str | None = None,
 ) -> Tuple[DatasetDict, Path]:
     """
     This function loads a dataset, based on the dataset_id and the content of its directory (if it is a local path).
@@ -91,11 +85,8 @@ def load_dataset_from_dataset_id(
 
     3. The dataset_id is a path to a local, custom dataset directory.
 
-    4. The dataset_id is a HuggingFace dataset ID.
-
     Args:
         dataset_id: Path to a processed dataset directory or local dataset directory or HuggingFace dataset ID.
-        language_id (Only used for the HF dataset case): Language identifier for the dataset (e.g., 'en' for English)
 
     Returns:
         DatasetDict: A processed dataset ready for training with train/test splits
@@ -107,7 +98,7 @@ def load_dataset_from_dataset_id(
     try:
         dataset = _load_mdc_common_voice(dataset_id)
         return dataset, _get_mdc_proc_dataset_path(dataset_id)
-    except FileNotFoundError:
+    except Exception:
         pass
 
     try:
@@ -122,17 +113,8 @@ def load_dataset_from_dataset_id(
     except FileNotFoundError:
         pass
 
-    try:
-        dataset = _load_hf_common_voice(dataset_id, language_id)
-        return dataset, _get_hf_proc_dataset_path(dataset_id, language_id)
-    except HFValidationError:
-        pass
-    except FileNotFoundError:
-        pass
-
     raise ValueError(
-        f"Could not find dataset {dataset_id}, neither locally nor at HuggingFace. "
-        f"If its a private repo, make sure you are logged in locally."
+        f"Could not find dataset {dataset_id} locally or at MDC."
     )
 
 
@@ -146,7 +128,7 @@ def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
     Returns:
         DatasetDict: HF Dataset dictionary that consists of two distinct Datasets
     """
-    mdc_client = _get_mdc_client()
+    mdc_client = DataCollective()
     # Download if not exists and uncompress dataset
     dataset = mdc_client.load_dataset(dataset_id)
     dataset_df = dataset.to_pandas()
@@ -249,35 +231,6 @@ def _load_custom_dataset(dataset_dir: str) -> DatasetDict:
             "test": Dataset.from_pandas(test_df),
         }
     )
-
-
-def _load_hf_common_voice(dataset_id: str, language_id: str) -> DatasetDict:
-    """
-    Load the default train+validation split used for finetuning and a test split used for evaluation.
-    Args:
-        dataset_id: official Common Voice dataset id from the mozilla-foundation organisation from Hugging Face
-        language_id: a registered language identifier from Common Voice (most often in ISO-639 format)
-
-    Returns:
-        DatasetDict: HF Dataset dictionary that consists of two distinct Datasets
-    """
-    common_voice = DatasetDict()
-
-    common_voice["train"] = load_dataset(
-        dataset_id,
-        language_id,
-        split="train+validation",
-        trust_remote_code=True,
-    )
-    common_voice["test"] = load_dataset(
-        dataset_id,
-        language_id,
-        split="test",
-        trust_remote_code=True,
-    )
-    common_voice = common_voice.select_columns(["audio", "sentence"])
-
-    return common_voice
 
 
 def load_and_proc_hf_fleurs(
