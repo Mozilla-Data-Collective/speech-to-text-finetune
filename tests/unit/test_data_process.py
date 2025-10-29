@@ -49,7 +49,7 @@ def test_load_dataset_from_dataset_id_custom(custom_data_path):
 
 def test_load_dataset_from_dataset_id_hf_cv(mock_load_hf_dataset):
     dataset, _ = load_dataset_from_dataset_id(
-        dataset_id="mozilla-foundation/common_voice_17_0", language_id="en"
+        dataset_id="mozilla-foundation/common_voice_17_0"
     )
     _assert_proper_dataset(dataset)
 
