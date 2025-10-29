@@ -1,3 +1,4 @@
+import json
 from typing import Dict
 
 from evaluate import EvaluationModule
@@ -76,7 +77,6 @@ def compute_wer_cer_metrics(
 
 def get_hf_username() -> str:
     return HfApi().whoami()["name"]
-
 
 def create_model_card(
     model_id: str,
@@ -158,3 +158,34 @@ def update_hf_model_card_with_fleurs_results(
 - Loss: {round(ft_eval_results["eval_loss"], 3)}
 """
     model_card.push_to_hub(model_repo_id)
+
+
+def extract_all_chars(batch):
+    all_text = " ".join(batch["sentence"])
+    vocab = list(set(all_text))
+    return {"vocab": [vocab], "all_text": [all_text]}
+
+
+def make_vocab(train_data, lang_code, path_to_output_dir):
+    """
+    Builds vocabulary from train and dev sets (maybe its better to exclude 
+    dev vocab here but :shrug: we will not have the test vocab when getting 
+    eval numbers on test).
+    """
+    vocab_train = train_data.map(
+        extract_all_chars,
+        batched=True,
+        batch_size=-1,
+        keep_in_memory=True,
+    )
+
+    vocab_dict = {v: k for k, v in enumerate(sorted(vocab_train["vocab"][0]))}
+    vocab_dict["|"] = vocab_dict[" "]
+    del vocab_dict[" "]
+
+    vocab_dict["[UNK]"] = len(vocab_dict)
+    vocab_dict["[PAD]"] = len(vocab_dict)
+
+    new_vocab_dict = {lang_code: vocab_dict}
+    with open(f'{path_to_output_dir}/vocab.json', 'w') as vocab_file:
+        json.dump(new_vocab_dict, vocab_file)

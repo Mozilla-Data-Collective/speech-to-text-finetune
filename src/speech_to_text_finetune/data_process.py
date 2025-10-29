@@ -10,7 +10,7 @@ import torch
 from dataclasses import dataclass
 from typing import Dict, List, Union, Tuple
 
-from transformers import WhisperProcessor
+from transformers import WhisperProcessor, Wav2Vec2Processor
 from datasets import load_dataset, DatasetDict, Audio, Dataset, load_from_disk
 from loguru import logger
 
@@ -273,7 +273,7 @@ def _are_labels_in_length_range(labels: List[int], max_label_length: int = 448) 
     return len(labels) < max_label_length
 
 
-def process_dataset(
+def process_dataset_for_whisper(
     dataset: DatasetDict | Dataset,
     processor: WhisperProcessor,
     batch_size: int,
@@ -379,3 +379,48 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         batch["labels"] = labels
 
         return batch
+
+@dataclass
+class DataCollatorCTCWithPadding:
+    """
+    Data collator that will dynamically pad the inputs received.
+    """
+    processor: Wav2Vec2Processor
+    padding: Union[bool, str] = True
+
+    def __call__(
+            self, 
+            features: List[Dict[str, Union[List[int], torch.Tensor]]]
+            ) -> Dict[str, torch.Tensor]:
+        input_features = [{"input_values": feature["input_values"]} 
+                          for feature in features]
+        
+        label_features = [{"input_ids": feature["labels"]} 
+                          for feature in features]
+        batch = self.processor.pad(
+            input_features,
+            padding=self.padding,
+            return_tensors="pt",
+        )
+        labels_batch = self.processor.pad(
+            labels=label_features,
+            padding=self.padding,
+            return_tensors="pt",
+        )
+
+        # replace padding with -100 to ignore loss correctly
+        labels = labels_batch["input_ids"].masked_fill(
+            labels_batch.attention_mask.ne(1), 
+            -100
+        )
+        batch["labels"] = labels
+        return batch
+    
+def preprocess_for_mms(dataset):
+    """
+    More preprocessing can be added here in the future
+    """
+    for split in ("train", "test"):
+        dataset[split] = dataset[split].cast_column("audio", 
+                                                    Audio(sampling_rate=16_000))
+    return dataset
