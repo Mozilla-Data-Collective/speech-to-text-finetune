@@ -103,7 +103,7 @@ def load_dataset_from_dataset_id(
         pass
 
     try:
-        dataset = _load_local_common_voice(dataset_id, is_spontaneous_speech)
+        dataset = _load_local_common_voice(dataset_id)
         return dataset, _get_local_proc_dataset_path(dataset_id)
     except FileNotFoundError:
         pass
@@ -153,38 +153,57 @@ def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
         is_spontaneous_speech=is_spontaneous_speech,
     )
 
+def _check_if_local_common_voice_is_spontaneous(cv_data_dir: Path) -> bool:
+    """
+    Check if the local Common Voice dataset is Spontaneous (SPS) or Scripted (SCS),
+    based on the expected directory structure and file names.
+    - SPS: contains `audios/` directory and `ss-corpus*.tsv` files
+    - SCS: contains `clips/` directory and `train.tsv`, `dev.tsv`, `test.tsv` files
+    """
+    entries = list(cv_data_dir.iterdir())
+    dir_names = {p.name for p in entries if p.is_dir()}
+    file_names = {p.name for p in entries if p.is_file()}
 
-def _load_local_common_voice(cv_data_dir: str, is_spontaneous_speech: bool) -> DatasetDict:
+    if "audios" in dir_names and any(name.startswith("ss-corpus") and name.endswith(".tsv") for name in file_names):
+        return True
+    elif "clips" in dir_names and {"train.tsv", "dev.tsv", "test.tsv"}.issubset(file_names):
+        return False
+    else:
+        raise ValueError("Unexpected dataset format. Could not determine if local Common Voice is SPS or SCS.")
+
+def _load_local_common_voice(cv_data_dir: str) -> DatasetDict:
     """
     Shared loader for local Common Voice (SPS/SCS).
     Build a single DataFrame with `splits` for local Common Voice.
     - SPS: scan `ss-corpus*.tsv` that already contains splits
     - SCS: read `train.tsv`, `dev.tsv`, `test.tsv` and add a `splits` column
     """
-    cv_dir = Path(cv_data_dir)
+    cv_data_dir = Path(cv_data_dir)
+
+    is_spontaneous_speech = _check_if_local_common_voice_is_spontaneous(cv_data_dir)
 
     if is_spontaneous_speech:
         dataset_df = None
-        for file in cv_dir.iterdir():
+        for file in cv_data_dir.iterdir():
             if file.is_file() and file.name.startswith("ss-corpus") and file.name.endswith(".tsv"):
                 dataset_df = pd.read_csv(file, sep="\t")
                 break
         if dataset_df is None:
             raise FileNotFoundError("Could not find SCS `ss-corpus*.tsv` file.")
-        audio_dir = cv_dir / "audios"
+        audio_dir = cv_data_dir / "audios"
         audio_clip_column = "audio_file"
     else:
-        train_df = pd.read_csv(cv_dir / "train.tsv", sep="\t")
+        train_df = pd.read_csv(cv_data_dir / "train.tsv", sep="\t")
         train_df["splits"] = "train"
 
-        dev_df = pd.read_csv(cv_dir / "dev.tsv", sep="\t")
+        dev_df = pd.read_csv(cv_data_dir / "dev.tsv", sep="\t")
         dev_df["splits"] = "dev"
 
-        test_df = pd.read_csv(cv_dir / "test.tsv", sep="\t")
+        test_df = pd.read_csv(cv_data_dir / "test.tsv", sep="\t")
         test_df["splits"] = "test"
 
         dataset_df = pd.concat([train_df, dev_df, test_df], ignore_index=True)
-        audio_dir = cv_dir / "clips"
+        audio_dir = cv_data_dir / "clips"
         audio_clip_column = "path"
 
     return _build_cv_dataset_from_df(
