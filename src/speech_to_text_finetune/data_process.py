@@ -389,7 +389,7 @@ def process_dataset(
     dataset: DatasetDict | Dataset,
     processor: WhisperProcessor,
     batch_size: int,
-    proc_dataset_path: str,
+    proc_dataset_path: str | Path,
 ) -> DatasetDict | Dataset:
     """
     Process dataset to the expected format by a Whisper model and then save it locally for future use.
