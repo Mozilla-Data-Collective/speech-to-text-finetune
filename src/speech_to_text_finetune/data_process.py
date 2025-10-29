@@ -74,7 +74,7 @@ def _get_local_proc_dataset_path(dataset_id: str) -> Path:
 
 
 def load_dataset_from_dataset_id(
-    dataset_id: str, is_spontaneous_speech: bool = False
+    dataset_id: str
 ) -> Tuple[DatasetDict, Path]:
     """
     This function loads a dataset, based on the dataset_id and the content of its directory (if it is a local path).
@@ -87,7 +87,6 @@ def load_dataset_from_dataset_id(
 
     Args:
         dataset_id: Path to a processed dataset directory or local dataset directory or HuggingFace dataset ID.
-        is_spontaneous_speech: Whether the Common Voice dataset is spontaneous speech (SCS) or scripted speech (SPS).
 
     Returns:
         DatasetDict: A processed dataset ready for training with train/test splits
@@ -98,7 +97,7 @@ def load_dataset_from_dataset_id(
     """
 
     try:
-        dataset = _load_mdc_common_voice(dataset_id, is_spontaneous_speech)
+        dataset = _load_mdc_common_voice(dataset_id)
         return dataset, _get_mdc_proc_dataset_path(dataset_id)
     except Exception:
         pass
@@ -119,7 +118,7 @@ def load_dataset_from_dataset_id(
         f"Could not find dataset {dataset_id} locally or at MDC."
     )
 
-def _load_mdc_common_voice(dataset_id: str, is_spontaneous_speech: bool) -> DatasetDict:
+def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
     """
     Shared loader for MDC-hosted Common Voice (SPS/SCS).
     Load MDC dataset once and return a single DataFrame with `splits`,
@@ -127,7 +126,6 @@ def _load_mdc_common_voice(dataset_id: str, is_spontaneous_speech: bool) -> Data
 
     Args:
         dataset_id: official Common Voice dataset id from the Mozilla Data Collective
-        is_spontaneous_speech: whether the Common Voice dataset is spontaneous speech (SCS) or scripted speech (SPS)
 
     Returns:
         DatasetDict: HF Dataset dictionary that consists of two distinct Datasets
@@ -136,7 +134,10 @@ def _load_mdc_common_voice(dataset_id: str, is_spontaneous_speech: bool) -> Data
     mdc_client = DataCollective()
     dataset = mdc_client.load_dataset(dataset_id)
     dataset_df = dataset.to_pandas()
+    dataset_details = mdc_client.get_dataset_details(dataset_id)
     data_dir = Path(dataset.directory)
+
+    is_spontaneous_speech = "spontaneous" in dataset_details["title"].lower()
 
     if is_spontaneous_speech:
         audio_dir = data_dir / "audios"
