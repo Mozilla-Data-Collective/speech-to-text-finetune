@@ -137,7 +137,15 @@ def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
     dataset_details = mdc_client.get_dataset_details(dataset_id)
     data_dir = Path(dataset.directory)
 
-    is_spontaneous_speech = "spontaneous" in dataset_details["title"].lower()
+    if "spontaneous" in dataset_details["title"].lower():
+        is_spontaneous_speech = True
+    elif "scripted" in dataset_details["title"].lower():
+        is_spontaneous_speech = False
+    else:
+        raise ValueError(
+            "Could not determine if MDC Common Voice dataset is SPS or SCS."
+            "Dataset does not seem to be part of Common Voice collection."
+        )
 
     if is_spontaneous_speech:
         audio_dir = data_dir / "audios"
