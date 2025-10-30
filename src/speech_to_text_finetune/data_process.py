@@ -7,6 +7,7 @@ import pandas as pd
 import torch
 from datacollective import DataCollective
 from datasets import Audio, Dataset, DatasetDict, load_dataset, load_from_disk
+from dotenv import load_dotenv
 from loguru import logger
 from transformers import WhisperProcessor
 
@@ -101,15 +102,18 @@ def load_dataset_from_dataset_id(
     try:
         dataset = _load_mdc_common_voice(dataset_id)
         return dataset, _get_mdc_proc_dataset_path(dataset_id)
-    except ValueError:
-        pass
+    except InvalidCommonVoiceDatasetError:
+        # This means the dataset was found on MDC but isn't a Common Voice dataset;
+        raise
+    except Exception as e:
+        # MDC load failed (dataset not present on MDC or transient MDC error) — try next loaders.
+        logger.debug(f"MDC load skipped for {dataset_id}: \n{e}")
 
     try:
         dataset = _load_local_common_voice(dataset_id)
         return dataset, _get_local_proc_dataset_path(dataset_id)
     except FileNotFoundError:
-        pass
-    except InvalidCommonVoiceDatasetError:
+        # Not a local Common Voice dataset — try next loader.
         pass
 
     try:
@@ -119,7 +123,8 @@ def load_dataset_from_dataset_id(
         pass
 
     raise ValueError(
-        f"Could not find dataset {dataset_id} locally or at MDC."
+        f"Could not find dataset {dataset_id} locally or at MDC. "
+        f"Or you are missing your MDC_API_KEY environment variable."
     )
 
 def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
@@ -135,6 +140,12 @@ def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
         DatasetDict: HF Dataset dictionary that consists of two distinct Datasets
         with columns "audio" and "sentence"
     """
+    load_dotenv()
+    if "MDC_API_KEY" not in os.environ:
+        raise EnvironmentError(
+            "MDC_API_KEY environment variable not set. "
+            "Please set it to access Mozilla Data Collective datasets."
+        )
     mdc_client = DataCollective()
     dataset = mdc_client.load_dataset(dataset_id)
     dataset_df = dataset.to_pandas()
