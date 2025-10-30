@@ -311,9 +311,9 @@ def _load_custom_dataset(dataset_dir: str) -> DatasetDict:
         DatasetDict: HF Dataset dictionary that consists of two distinct Datasets (train+validation and test)
     """
     train_file = dataset_dir + "/train/text.csv"
-    train_dir = dataset_dir + "/train/clips"
+    train_dir = Path(dataset_dir + "/train/clips")
     test_file = dataset_dir + "/test/text.csv"
-    test_dir = dataset_dir + "/test/clips"
+    test_dir = Path(dataset_dir + "/test/clips")
 
     train_df = pd.read_csv(train_file)
     test_df = pd.read_csv(test_file)
