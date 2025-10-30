@@ -199,7 +199,7 @@ def _load_local_common_voice(cv_data_dir: str) -> DatasetDict:
                 dataset_df = pd.read_csv(file, sep="\t")
                 break
         if dataset_df is None:
-            raise FileNotFoundError("Could not find SCS `ss-corpus*.tsv` file.")
+            raise FileNotFoundError("Could not find SPS `ss-corpus*.tsv` file.")
         audio_dir = cv_data_dir / "audios"
         audio_clip_column = "audio_file"
     else:
