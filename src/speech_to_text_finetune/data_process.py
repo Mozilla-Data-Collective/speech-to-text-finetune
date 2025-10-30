@@ -92,7 +92,7 @@ def load_dataset_from_dataset_id(
 
     Returns:
         DatasetDict: A processed dataset ready for training with train/test splits
-        str: Path to save the processed directory
+        Path: Path to save the processed directory
 
     Raises:
         ValueError: If the dataset cannot be found locally or on HuggingFace
