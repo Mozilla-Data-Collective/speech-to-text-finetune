@@ -287,12 +287,12 @@ def _replace_rel_path_with_abs_path(
     return df
 
 
-def _get_audio_files_from_dir(dataset_dir: str) -> List[str]:
+def _get_audio_files_from_dir(dataset_dir: Path) -> List[str]:
     return sorted(
         [
-            f"{dataset_dir}/{f}"
-            for f in os.listdir(f"{dataset_dir}")
-            if f.endswith(".wav") or f.endswith(".mp3")
+            str(dataset_dir / f)
+            for f in dataset_dir.iterdir()
+            if f.suffix == ".wav" or f.suffix == ".mp3"
         ],
     )
 
