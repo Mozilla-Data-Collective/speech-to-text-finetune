@@ -109,7 +109,7 @@ def load_dataset_from_dataset_id(
         return dataset, _get_local_proc_dataset_path(dataset_id)
     except FileNotFoundError:
         pass
-    except ValueError:
+    except InvalidCommonVoiceDatasetError:
         pass
 
     try:
@@ -146,8 +146,8 @@ def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
     elif "scripted" in dataset_details["title"].lower():
         is_spontaneous_speech = False
     else:
-        raise ValueError(
-            "Could not determine if MDC Common Voice dataset is SPS or SCS."
+        raise InvalidCommonVoiceDatasetError(
+            "Could not determine if MDC Common Voice dataset is SPS or SCS. "
             "Dataset does not seem to be part of Common Voice collection."
         )
 
@@ -497,3 +497,8 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         batch["labels"] = labels
 
         return batch
+
+
+class InvalidCommonVoiceDatasetError(ValueError):
+    """Raised when an MDC Common Voice dataset cannot be classified as SPS or SCS."""
+    pass
