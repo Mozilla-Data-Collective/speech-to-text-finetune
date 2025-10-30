@@ -1,5 +1,7 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pandas as pd
 import pytest
 from datasets import DatasetDict, Dataset
 
@@ -11,19 +13,10 @@ from speech_to_text_finetune.data_process import (
 )
 
 
-@pytest.fixture
-def mock_load_hf_dataset():
-    with patch("speech_to_text_finetune.data_process.load_dataset") as mocked_load:
-        mock_dataset = MagicMock(spec=Dataset)
-        mock_dataset.features = {"index": None, "sentence": None, "audio": None}
-        mock_dataset.select_columns = MagicMock(return_value=mock_dataset)
-        mocked_load.side_effect = [mock_dataset, mock_dataset]
-        yield mocked_load
-
-
-def test_try_find_processed_version_hf():
+def test_try_find_processed_version_mdc():
+    # For an MDC dataset id with no local processed copy, this should return None
     dataset = try_find_processed_version(
-        dataset_id="mozilla-foundation/common_voice_17_0", language_id="en"
+        dataset_id="mozilla/cv_dummy_dataset_id", language_id="en"
     )
     assert dataset is None
 
@@ -47,11 +40,62 @@ def test_load_dataset_from_dataset_id_custom(custom_data_path):
     _assert_proper_dataset(dataset)
 
 
-def test_load_dataset_from_dataset_id_hf_cv(mock_load_hf_dataset):
-    dataset, _ = load_dataset_from_dataset_id(
-        dataset_id="mozilla-foundation/common_voice_17_0"
-    )
-    _assert_proper_dataset(dataset)
+def test_load_dataset_from_dataset_id_mdc_cv_sps(tmp_path: Path):
+    # Mock MDC CV Spontaneous Speech (SPS): uses the expected dataset structure of
+    # 'audios' dir and columns 'audio_file' + 'transcription'
+    with patch("speech_to_text_finetune.data_process.DataCollective") as MockDC:
+        mock_client = MockDC.return_value
+
+        df = pd.DataFrame(
+            {
+                "splits": ["train", "dev", "test"],
+                "audio_file": ["a.wav", "b.wav", "c.wav"],
+                "transcription": ["t1", "t2", "t3"],
+            }
+        )
+        mock_dataset = MagicMock()
+        mock_dataset.to_pandas.return_value = df
+
+        sps_dir = tmp_path / "sps_dataset"
+        (sps_dir / "audios").mkdir(parents=True, exist_ok=True)
+        mock_dataset.directory = str(sps_dir)
+
+        mock_client.load_dataset.return_value = mock_dataset
+        mock_client.get_dataset_details.return_value = {
+            "title": "Common Voice Spontaneous Speech (SPS)"
+        }
+
+        dataset, _ = load_dataset_from_dataset_id(dataset_id="mozilla/cv_sps_en")
+        _assert_proper_dataset(dataset)
+
+
+def test_load_dataset_from_dataset_id_mdc_scs(tmp_path: Path):
+    # Mock MDC Scripted Speech (SCS): uses the expected dataset structure of
+    # 'clips' dir and columns 'path' + 'sentence'
+    with patch("speech_to_text_finetune.data_process.DataCollective") as MockDC:
+        mock_client = MockDC.return_value
+
+        df = pd.DataFrame(
+            {
+                "splits": ["train", "dev", "test"],
+                "path": ["x.wav", "y.wav", "z.wav"],
+                "sentence": ["s1", "s2", "s3"],
+            }
+        )
+        mock_dataset = MagicMock()
+        mock_dataset.to_pandas.return_value = df
+
+        scs_dir = tmp_path / "scs_dataset"
+        (scs_dir / "clips").mkdir(parents=True, exist_ok=True)
+        mock_dataset.directory = str(scs_dir)
+
+        mock_client.load_dataset.return_value = mock_dataset
+        mock_client.get_dataset_details.return_value = {
+            "title": "Common Voice Scripted Speech (SCS)"
+        }
+
+        dataset, _ = load_dataset_from_dataset_id(dataset_id="mozilla/cv_scs_en")
+        _assert_proper_dataset(dataset)
 
 
 def test_load_subset_of_dataset_train(custom_dataset_half_split):
