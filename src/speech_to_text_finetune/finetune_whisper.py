@@ -1,3 +1,4 @@
+import argparse
 import json
 from functools import partial
 
@@ -187,4 +188,9 @@ def run_finetuning(
 
 
 if __name__ == "__main__":
-    run_finetuning(config_path="example_data/config.yaml")
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("--path_to_config", "-c", 
+                           default="example_data/config.yaml", 
+                           help="Path to the experiment config yaml file")
+    args = argparser.parse_args()
+    run_finetuning(config_path=args.path_to_config)
