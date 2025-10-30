@@ -75,7 +75,7 @@ The same instructions apply for the GitHub Codespaces option.
 2. Set up MDC access for Common Voice via the Python SDK:
    - Create an account and get an API key from: https://datacollective.mozillafoundation.org/api-reference
    - Create a local `.env` file from the template and add your MDC API key:
-     - `cp example_data/.env.example .env`
+     - `cp example_data/.env.example src/speech_to_text_finetune/.env`
      - Edit `.env` and set `MDC_API_KEY=<your_api_key>`
      - Get an API key from: https://datacollective.mozillafoundation.org/api-reference
 3. \[Optional\] Log in to Hugging Face if you plan to track your models: `huggingface-cli login`

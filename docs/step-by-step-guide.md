@@ -22,7 +22,7 @@ This blueprint consists of three independent, yet complementary, components:
 - MDC access for Common Voice via the Python SDK:
   - Create an account and get an API key from: https://datacollective.mozillafoundation.org/api-reference
 - Local `.env` with MDC API key:
-  - `cp example_data/.env.example .env`
+  - `cp example_data/.env.example src/speech_to_text_finetune/.env`
   - Edit `.env` and set `MDC_API_KEY=<your_api_key>` from https://datacollective.mozillafoundation.org/api-reference
 
 Visit **[Getting Started](getting-started.md)** for initial project setup.
