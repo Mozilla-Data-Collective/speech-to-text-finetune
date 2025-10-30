@@ -63,10 +63,12 @@ def _get_mdc_proc_dataset_path(dataset_id: str) -> Path:
     return Path(f"./artifacts/{dataset_id.replace('/', '_')}/{PROC_DATASET_DIR}")
 
 
-def _get_hf_proc_dataset_path(dataset_id: str, language_id: str) -> str:
-    return (
-        f"./artifacts/{language_id}_{dataset_id.replace('/', '_')}/{PROC_DATASET_DIR}"
-    )
+def _get_hf_proc_dataset_path(dataset_id: str, language_id: str | None) -> str:
+    hf_proc_path = f"./artifacts/{dataset_id.replace('/', '_')}"
+    if language_id:
+        hf_proc_path += f"_{language_id}"
+    hf_proc_path += f"/{PROC_DATASET_DIR}"
+    return hf_proc_path
 
 
 def _get_local_proc_dataset_path(dataset_id: str) -> Path:
