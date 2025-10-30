@@ -79,7 +79,7 @@ def load_dataset_from_dataset_id(
     """
     This function loads a dataset, based on the dataset_id and the content of its directory (if it is a local path).
     Possible cases:
-    1. The dataset_id is an MDC dataset id.
+    1. The dataset_id is an MDC dataset id. In that case, an .env file with MDC_API_KEY must be set up.
 
     2. The dataset_id is a path to a local, Common Voice dataset directory.
 
