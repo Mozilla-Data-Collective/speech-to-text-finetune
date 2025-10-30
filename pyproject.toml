@@ -18,7 +18,8 @@ dependencies = [
   "tensorboard",
   "transformers",
   "datacollective",
-  "soundfile"
+  "soundfile",
+  "librosa"
 ]
 
 [project.optional-dependencies]
