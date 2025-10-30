@@ -150,11 +150,11 @@ def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
     dataset = mdc_client.load_dataset(dataset_id)
     dataset_df = dataset.to_pandas()
     dataset_details = mdc_client.get_dataset_details(dataset_id)
-    data_dir = Path(dataset.directory)
+    data_dir = Path(dataset.corpus_filepath)
 
-    if "spontaneous" in dataset_details["title"].lower():
+    if "spontaneous" in dataset_details["name"].lower():
         is_spontaneous_speech = True
-    elif "scripted" in dataset_details["title"].lower():
+    elif "scripted" in dataset_details["name"].lower():
         is_spontaneous_speech = False
     else:
         raise InvalidCommonVoiceDatasetError(
@@ -217,13 +217,13 @@ def _load_local_common_voice(cv_data_dir: str) -> DatasetDict:
         audio_clip_column = "audio_file"
     else:
         train_df = pd.read_csv(cv_data_dir / "train.tsv", sep="\t")
-        train_df["splits"] = "train"
+        train_df["split"] = "train"
 
         dev_df = pd.read_csv(cv_data_dir / "dev.tsv", sep="\t")
-        dev_df["splits"] = "dev"
+        dev_df["split"] = "dev"
 
         test_df = pd.read_csv(cv_data_dir / "test.tsv", sep="\t")
-        test_df["splits"] = "test"
+        test_df["split"] = "test"
 
         dataset_df = pd.concat([train_df, dev_df, test_df], ignore_index=True)
         audio_dir = cv_data_dir / "clips"
@@ -257,7 +257,7 @@ def _build_cv_dataset_from_df(
         df = df.rename(columns={"transcription": "sentence"})
 
     # Ensure we have splits
-    if "splits" not in df.columns:
+    if "split" not in df.columns:
         raise ValueError("Expected a 'splits' column in the dataset DataFrame.")
 
     # Convert relative to absolute audio paths
@@ -266,8 +266,8 @@ def _build_cv_dataset_from_df(
     )
 
     # Split and keep only relevant columns
-    train_df = df[df["splits"].isin(["train", "dev"])][["audio", "sentence"]]
-    test_df = df[df["splits"] == "test"][["audio", "sentence"]]
+    train_df = df[df["split"].isin(["train", "dev"])][["audio", "sentence"]]
+    test_df = df[df["split"] == "test"][["audio", "sentence"]]
 
     return DatasetDict(
         {
