@@ -69,45 +69,69 @@ The same instructions apply for the GitHub Codespaces option.
 
 ### Setup
 
-1. Use a virtual environment and install dependencies: `pip install -e .` & [ffmpeg](https://ffmpeg.org) e.g. for Ubuntu: `sudo apt install ffmpeg`, for Mac: `brew install ffmpeg`
+1. Create a virtual environment and install dependencies:
+   - `pip install -e .`
+   - Install [ffmpeg](https://ffmpeg.org) \[Ubuntu\]: `sudo apt install ffmpeg`, \[Mac\]: `brew install ffmpeg`
+2. Set up MDC access for Common Voice via the Python SDK:
+   - Create an account and get an API key from: https://datacollective.mozillafoundation.org/api-reference
+   - Create a local `.env` file from the template and add your MDC API key:
+     - `cp example_data/.env.example .env`
+     - Edit `.env` and set `MDC_API_KEY=<your_api_key>`
+     - Get an API key from: https://datacollective.mozillafoundation.org/api-reference
+3. \[Optional\] Log in to Hugging Face if you plan to track your models: `huggingface-cli login`
 
-### Evaluate existing STT models from the HuggingFace repository.
+### Evaluate existing STT models from the HuggingFace repository
 
-1. Simply execute: `python demo/transcribe_app.py`
+1. Run: `python demo/transcribe_app.py`
 2. Add the HF model id of your choice
-3. Record a sample of your voice and get the transcribe text back
+3. Record a sample of your voice and get the transcribed text back
 
 ### Making your own STT model using Custom Data
 
-1. Create your own, local, custom dataset by running this command and following the instructions: `python src/speech_to_text_finetune/make_custom_dataset_app.py`
-2. Configure `config.yaml` with the model, custom data directory and hyperparameters of your choice. Note that if you select `push_to_hub: True` you need to have an HF account and log in locally.
-3. Finetune a model by running: `python src/speech_to_text_finetune/finetune_whisper.py`
-4. Test the finetuned model in the transcription app: `python demo/transcribe_app.py`
+1. Create your own, local, custom dataset and follow the UI instructions: `python src/speech_to_text_finetune/make_custom_dataset_app.py`
+2. Configure `config.yaml` with the model, custom data directory and hyperparameters. If `push_to_hub: True`, log in to HF locally.
+3. Finetune: `python src/speech_to_text_finetune/finetune_whisper.py`
+4. Test the finetuned model: `python demo/transcribe_app.py`
 
 ### Making your own STT model using Common Voice
 
-There are two ways to download the Common Voice dataset:
+You can either load Common Voice via the Mozilla Data Collective Python SDK directly or use a locally downloaded copy.
 
-#### From Common Voice's website (Recommended)
+#### Option A: Load via Mozilla Data Collective Python SDK
 
-1. Go to https://commonvoice.mozilla.org/en/datasets, pick your language and dataset version and download the dataset
-2. Move the zipped file under a directory of your choice and extract it
+1. Ensure `.env` exists and contains a valid `MDC_API_KEY` (see Setup above).
+2. Identify the MDC dataset id for your language (Scripted or Spontaneous Common Voice) from the Mozilla Data Collective portal.
+3. Set `dataset_id` in `config.yaml` to the MDC dataset id. Example:
+   ```
+   model_id: openai/whisper-tiny
+   dataset_id: <mdc_dataset_id>
+   language: English
+   repo_name: default
 
-#### From HuggingFace
+   training_hp:
+     push_to_hub: False
+     hub_private_repo: True
+     ...
+   ```
+4. Finetune: `python src/speech_to_text_finetune/finetune_whisper.py`
 
-**_Note_**: A Hugging Face account is required.
+#### Option B: Use a locally downloaded Common Voice dataset
 
-**_Note 2_**: The Common Voice dataset is not properly maintained on HuggingFace and the latest release there is a much older version.
+1. Download from https://datacollective.mozillafoundation.org/datasets (newest versions) or https://commonvoice.mozilla.org/en/datasets (older versions), pick your language/version.
+2. Extract the zip to a directory on your machine.
+3. Set `dataset_id` in `config.yaml` to the local dataset path. Example:
+   ```
+   model_id: openai/whisper-tiny
+   dataset_id: path/to/common_voice_data/language_id
+   language: English
+   repo_name: default
 
-1. Go to the Common Voice dataset [repo](https://huggingface.co/datasets/mozilla-foundation/common_voice_17_0) and ask for explicit access request (should be approved instantly).
-2. On Hugging Face create an [Access Token](https://huggingface.co/docs/hub/en/security-tokens) and in your terminal, run the command `huggingface-cli login` and follow the instructions to log in to your account.
-
-#### _After you have completed the steps above_
-
-3. Configure `config.yaml` with the model, the extracted Common Voice dir **_OR_** the dataset repo id of HF and hyperparameters of your choice.
-4. Finetune a model by running: `python src/speech_to_text_finetune/finetune_whisper.py`
-5. Test the finetuned model in the transcription app: `python demo/transcribe_app.py`
-
+   training_hp:
+     push_to_hub: False
+     hub_private_repo: True
+     ...
+   ```
+4. Finetune: `python src/speech_to_text_finetune/finetune_whisper.py`
 
 > [!TIP]
 > Run `python demo/model_comparison_app.py` to easily compare the performance of two models side by side ([example](images/model_comparison_example.png)).
@@ -123,3 +147,4 @@ This project is licensed under the Apache 2.0 License. See the [LICENSE](LICENSE
 ## Contributing
 
 Contributions are welcome! To get started, you can check out the [CONTRIBUTING.md](CONTRIBUTING.md) file.
+
