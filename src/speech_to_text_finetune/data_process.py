@@ -99,13 +99,15 @@ def load_dataset_from_dataset_id(
     try:
         dataset = _load_mdc_common_voice(dataset_id)
         return dataset, _get_mdc_proc_dataset_path(dataset_id)
-    except Exception:
+    except ValueError:
         pass
 
     try:
         dataset = _load_local_common_voice(dataset_id)
         return dataset, _get_local_proc_dataset_path(dataset_id)
     except FileNotFoundError:
+        pass
+    except ValueError:
         pass
 
     try:
