@@ -10,13 +10,16 @@ requires-python = ">=3.10"
 dynamic = ["version"]
 dependencies = [
   "accelerate",
-  "datasets[audio]",
+  "datasets[audio]==3.6.0",
   "evaluate",
   "gradio",
   "jiwer",
   "loguru",
   "tensorboard",
   "transformers",
+  "datacollective",
+  "soundfile",
+  "librosa"
 ]
 
 [project.optional-dependencies]

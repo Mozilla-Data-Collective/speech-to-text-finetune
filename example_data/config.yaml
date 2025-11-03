@@ -1,5 +1,5 @@
 model_id: openai/whisper-tiny
-dataset_id: example_data/custom
+dataset_id: cmflnuzw43exbql8uukllvnqg
 language: English
 repo_name: default
 n_train_samples: -1
