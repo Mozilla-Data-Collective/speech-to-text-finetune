@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../images/Blueprint-logo-black-flavicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.23">
     
     
       
@@ -357,6 +357,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#step-by-step-guide" class="md-nav__link">
     <span class="md-ellipsis">
       Step-by-Step Guide
@@ -385,18 +394,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-3-creating-a-finetuned-stt-model-using-your-custom-data" class="md-nav__link">
+  <a href="#step-3-create-a-finetuned-stt-model-using-your-custom-data" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 3 - Creating a finetuned STT model using your custom data
+      Step 3 - Create a finetuned STT model using your custom data
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-4-optional-creating-a-finetuned-stt-model-using-commonvoice-data" class="md-nav__link">
+  <a href="#step-4-create-a-finetuned-stt-model-using-common-voice" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 4 - (Optional) Creating a finetuned STT model using CommonVoice data
+      Step 4 - Create a finetuned STT model using Common Voice
     </span>
   </a>
   
@@ -406,6 +415,15 @@
   <a href="#step-5-evaluate-transcription-accuracy-with-your-finetuned-stt-model" class="md-nav__link">
     <span class="md-ellipsis">
       Step 5 - Evaluate transcription accuracy with your finetuned STT model
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-compare-transcription-performance-between-two-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 6 - Compare transcription performance between two models
     </span>
   </a>
   
@@ -562,6 +580,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#step-by-step-guide" class="md-nav__link">
     <span class="md-ellipsis">
       Step-by-Step Guide
@@ -590,18 +617,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-3-creating-a-finetuned-stt-model-using-your-custom-data" class="md-nav__link">
+  <a href="#step-3-create-a-finetuned-stt-model-using-your-custom-data" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 3 - Creating a finetuned STT model using your custom data
+      Step 3 - Create a finetuned STT model using your custom data
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-4-optional-creating-a-finetuned-stt-model-using-commonvoice-data" class="md-nav__link">
+  <a href="#step-4-create-a-finetuned-stt-model-using-common-voice" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 4 - (Optional) Creating a finetuned STT model using CommonVoice data
+      Step 4 - Create a finetuned STT model using Common Voice
     </span>
   </a>
   
@@ -611,6 +638,15 @@
   <a href="#step-5-evaluate-transcription-accuracy-with-your-finetuned-stt-model" class="md-nav__link">
     <span class="md-ellipsis">
       Step 5 - Evaluate transcription accuracy with your finetuned STT model
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-compare-transcription-performance-between-two-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 6 - Compare transcription performance between two models
     </span>
   </a>
   
@@ -677,37 +713,39 @@
 
 
 <h1 id="step-by-step-guide-how-the-speech-to-text-finetune-blueprint-works"><strong>Step-by-Step Guide: How the Speech-to-Text-Finetune Blueprint Works</strong></h1>
-<p>This Blueprint enables you to fine-tune a Speech-to-Text (STT) model, using either your own data or the Common Voice dataset. This Step-by-Step guide you through the end-to-end process of finetuning an STT model based on your needs.</p>
+<p>This Blueprint enables you to fine-tune a Speech-to-Text (STT) model, using either your own data or the Common Voice dataset. This Step-by-Step guide walks you through the end-to-end process of finetuning an STT model based on your needs.</p>
 <hr />
 <h2 id="overview"><strong>Overview</strong></h2>
 <p>This blueprint consists of three independent, yet complementary, components:</p>
 <ol>
-<li>
-<p><strong>Transcription app</strong> 🎙️📝: A simple UI that lets you record your voice, pick any HF STT/ASR model, and get an instant transcription.</p>
-</li>
-<li>
-<p><strong>Dataset maker app</strong> 📂🎤: Another UI app that enables you to easily and quickly create your own Speech-to-Text dataset.</p>
-</li>
-<li>
-<p><strong>Finetuning script</strong> 🛠️🤖: A script to finetune your own STT model, either using Common Voice data or your own custom data created by the Dataset maker app.</p>
-</li>
+<li><strong>Transcription app</strong> 🎙️📝: A simple UI that lets you record your voice, pick any HF STT/ASR model, and get an instant transcription.</li>
+<li><strong>Dataset maker app</strong> 📂🎤: A UI app that enables you to easily and quickly create your own Speech-to-Text dataset.</li>
+<li><strong>Finetuning script</strong> 🛠️🤖: A script to finetune your own STT model, either using Common Voice data or your own custom data created by the Dataset maker app.</li>
 </ol>
 <hr />
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Python deps installed: <code>pip install -e .</code> and <code>ffmpeg</code> installed:</li>
+<li>[Ubuntu]: <code>sudo apt install ffmpeg</code></li>
+<li>[Mac]: <code>brew install ffmpeg</code></li>
+<li>[Optional] Hugging Face login if you plan to track your models: <code>huggingface-cli login</code></li>
+<li>MDC access for Common Voice via the Python SDK:</li>
+<li>Create an account and get an API key from: https://datacollective.mozillafoundation.org/api-reference</li>
+<li>Local <code>.env</code> with MDC API key:</li>
+<li><code>cp example_data/.env.example src/speech_to_text_finetune/.env</code></li>
+<li>Edit <code>.env</code> and set <code>MDC_API_KEY=&lt;your_api_key&gt;</code> from https://datacollective.mozillafoundation.org/api-reference</li>
+</ul>
+<p>Visit <strong><a href="../getting-started/">Getting Started</a></strong> for initial project setup.</p>
+<hr />
 <h2 id="step-by-step-guide">Step-by-Step Guide</h2>
-<p>Visit the <strong><a href="../getting-started/">Getting Started</a></strong> page for the initial project setup.</p>
-<p>The following guide is a suggested user-flow for getting the most out of this Blueprint</p>
 <h3 id="step-1-initial-transcription-testing">Step 1 - Initial transcription testing</h3>
-<p>Start by initially testing the quality of the Speech-to-Text models available in HuggingFace:</p>
+<p>Initially, you can test the quality of the Speech-to-Text models available in HuggingFace by running the Transcription app.</p>
 <ol>
-<li>
-<p>Simply execute:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>demo/transcribe_app.py
-</span></code></pre></div>
-</li>
-<li>
-<p>Select or add the HF model id of your choice</p>
-</li>
-<li>Record a sample of your voice and get the transcribed text back. You may find that there are sometimes inaccuracies for your voice/accent/chosen language, indicating the model could benefit form finetuning on additional data.</li>
+<li>Run:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>demo/transcribe_app.py
+</span></code></pre></div></li>
+<li>Select or add the HF model id of your choice.</li>
+<li>Record a sample and inspect the transcription. You may find that there are sometimes inaccuracies for your voice/accent/chosen language, indicating the model could benefit form finetuning on additional data.</li>
 </ol>
 <h3 id="step-2-make-your-custom-dataset-for-stt-finetuning">Step 2 - Make your Custom Dataset for STT finetuning</h3>
 <ol>
@@ -720,81 +758,96 @@
 <p>Follow the instruction in the app to create at least 10 audio samples, which will be saved locally.</p>
 </li>
 </ol>
-<h3 id="step-3-creating-a-finetuned-stt-model-using-your-custom-data">Step 3 - Creating a finetuned STT model using your custom data</h3>
+<h3 id="step-3-create-a-finetuned-stt-model-using-your-custom-data">Step 3 - Create a finetuned STT model using your custom data</h3>
 <ol>
-<li>
-<p>Configure <code>config.yaml</code> with the model, custom data directory and hyperparameters of your choice. Note that if you select <code>push_to_hub: True</code> you need to have an HF account and log in locally. For example:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>model_id:<span class="w"> </span>openai/whisper-tiny
+<li>Configure <code>config.yaml</code> (example):
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>model_id:<span class="w"> </span>openai/whisper-tiny
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>dataset_id:<span class="w"> </span>example_data/custom
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>language:<span class="w"> </span>English
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>repo_name:<span class="w"> </span>default
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>training_hp:
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span>push_to_hub:<span class="w"> </span>False
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span>hub_private_repo:<span class="w"> </span>True
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span>...
-</span></code></pre></div>
-</li>
-<li>
-<p>Finetune a model by running:
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python<span class="w"> </span>src/speech_to_text_finetune/finetune_whisper.py
-</span></code></pre></div></p>
-</li>
-</ol>
-<blockquote>
-<p>[!TIP]
-You can prematurely and gracefully stop the finetuning job by pressing CTRL+C. The rest of the code (evaluation, uploading the model) will execute as normal.</p>
-</blockquote>
-<h3 id="step-4-optional-creating-a-finetuned-stt-model-using-commonvoice-data">Step 4 - (Optional) Creating a finetuned STT model using CommonVoice data</h3>
-<p>1.
-2. Go to https://commonvoice.mozilla.org/en/datasets, pick your language and dataset version and download the dataset
-2. Move the zipped file under a directory of your choice and extract it
-3. Configure <code>config.yaml</code> with the model, Common Voice dataset path and hyperparameters of your choice. For example:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>model_id:<span class="w"> </span>openai/whisper-tiny
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>dataset_id:<span class="w"> </span>path/to/common_voice_data/language_id
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>dataset_source:<span class="w"> </span>custom
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>language:<span class="w"> </span>English
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>repo_name:<span class="w"> </span>default
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>training_hp:
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span>push_to_hub:<span class="w"> </span>False
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span>hub_private_repo:<span class="w"> </span>True
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span>...
-</span></code></pre></div>
-<ol>
-<li>Finetune a model by running:
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python<span class="w"> </span>src/speech_to_text_finetune/finetune_whisper.py
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span>push_to_hub:<span class="w"> </span>False
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span>hub_private_repo:<span class="w"> </span>True
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span>...
 </span></code></pre></div></li>
 </ol>
+<p>Note that if you select <code>push_to_hub: True</code> you need to have an HF account and log in locally.</p>
+<ol>
+<li>Finetune:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python<span class="w"> </span>src/speech_to_text_finetune/finetune_whisper.py
+</span></code></pre></div><blockquote>
+<p>[!TIP]
+You can gracefully stop finetuning with CTRL+C; evaluation/upload steps will still run.</p>
+</blockquote>
+</li>
+</ol>
+<h3 id="step-4-create-a-finetuned-stt-model-using-common-voice">Step 4 - Create a finetuned STT model using Common Voice</h3>
+<p>Pick one of the following:</p>
+<ul>
+<li>Option A: Mozilla Data Collective Python SDK</li>
+<li>Ensure <code>.env</code> contains a valid <code>MDC_API_KEY</code>.</li>
+<li>Find the MDC dataset id for your language (Scripted or Spontaneous).</li>
+<li>Configure <code>config.yaml</code> with the MDC dataset id:
+     <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>model_id:<span class="w"> </span>openai/whisper-tiny
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>dataset_id:<span class="w"> </span>&lt;mdc_dataset_id&gt;
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>language:<span class="w"> </span>English
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>repo_name:<span class="w"> </span>default
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>training_hp:
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span>push_to_hub:<span class="w"> </span>False
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span>hub_private_repo:<span class="w"> </span>True
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span>...
+</span></code></pre></div></li>
+<li>
+<p>Finetune:
+     <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python<span class="w"> </span>src/speech_to_text_finetune/finetune_whisper.py
+</span></code></pre></div></p>
+</li>
+<li>
+<p>Option B: Local Common Voice download</p>
+</li>
+<li>Download from https://datacollective.mozillafoundation.org/datasets and extract locally.</li>
+<li>Configure <code>config.yaml</code> with the local path:
+     <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>model_id:<span class="w"> </span>openai/whisper-tiny
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>dataset_id:<span class="w"> </span>path/to/common_voice_data/language_id
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>language:<span class="w"> </span>English
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>repo_name:<span class="w"> </span>default
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>training_hp:
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span>push_to_hub:<span class="w"> </span>False
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span>hub_private_repo:<span class="w"> </span>True
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">  </span>...
+</span></code></pre></div></li>
+<li>Finetune:
+     <div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python<span class="w"> </span>src/speech_to_text_finetune/finetune_whisper.py
+</span></code></pre></div></li>
+</ul>
 <blockquote>
 <p>[!NOTE]
-Every time you load a new dataset, the script will have to process it before feeding it to the STT model. The script will then also save this processed dataset version locally so that next time you want to finetune a model on the same dataset, the processing step will be skipped, saving time &amp; computation.</p>
+The first time a dataset is used, it is processed and cached locally. Next runs reuse the processed version to save time and compute.</p>
 </blockquote>
 <h3 id="step-5-evaluate-transcription-accuracy-with-your-finetuned-stt-model">Step 5 - Evaluate transcription accuracy with your finetuned STT model</h3>
 <ol>
 <li>Start the Transcription app:
- ```bash
-python demo/transcribe_app.py
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>2. Provided that `push_to_hub: True` when you Finetuned, you can select your HuggingFace model-id. If not, you can specify the local path to your model
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>3. Record a sample of your voice and get the transcribed text back.
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>4. You can easily switch between models with the same recorded sample to evaluate if the finetuned model has improved transcription accuracy.
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>### Step 6 - Compare transcription performance between two models
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>1. Start the Model Comparison app:
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a> ```bash
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>python demo/model_comparison_app.py
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>python<span class="w"> </span>demo/transcribe_app.py
 </span></code></pre></div></li>
-<li>Select a baseline model, for example the model you used as a base for finetuning.</li>
-<li>Select a comparison model, for example your finetuned model.</li>
-<li>Record a sample of your voice and get two transcriptions back side-by-side for an easier manual evaluation.</li>
+<li>Select your HF model id (if pushed) or provide a local model path.</li>
+<li>Record a sample and compare results.</li>
+</ol>
+<h3 id="step-6-compare-transcription-performance-between-two-models">Step 6 - Compare transcription performance between two models</h3>
+<ol>
+<li>Start the Model Comparison app:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>python<span class="w"> </span>demo/model_comparison_app.py
+</span></code></pre></div></li>
+<li>Select a baseline model and a comparison model (e.g., your finetuned model).</li>
+<li>Record a sample and review both transcriptions side-by-side.</li>
 </ol>
 <h3 id="step-7-evaluate-a-model-on-the-fleurs-dataset-on-a-specific-language">Step 7 - Evaluate a model on the Fleurs dataset on a specific language</h3>
 <ol>
-<li>Configure the arguments through the command line according to your needs and execute the command below
- <code>bash
-python src/speech_to_text_finetune/evaluate_whisper_fleurs.py --model_id openai/whisper-tiny --lang_code sw_ke --language Swahili --eval_batch_size 8 --n_test_samples -1 --fp16 True --update_hf_repo False</code></li>
+<li>Configure the arguments and run:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>python<span class="w"> </span>src/speech_to_text_finetune/evaluate_whisper_fleurs.py<span class="w"> </span>--model_id<span class="w"> </span>openai/whisper-tiny<span class="w"> </span>--lang_code<span class="w"> </span>sw_ke<span class="w"> </span>--language<span class="w"> </span>Swahili<span class="w"> </span>--eval_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span>--n_test_samples<span class="w"> </span>-1<span class="w"> </span>--fp16<span class="w"> </span>True<span class="w"> </span>--update_hf_repo<span class="w"> </span>False
+</span></code></pre></div></li>
 </ol>
 <h2 id="customizing-the-blueprint">🎨 <strong>Customizing the Blueprint</strong></h2>
 <p>To better understand how you can tailor this Blueprint to suit your specific needs, please visit the <strong><a href="../customization/">Customization Guide</a></strong>.</p>
