@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -5,6 +6,18 @@ import pytest
 from transformers import WhisperProcessor, WhisperFeatureExtractor
 
 from speech_to_text_finetune.data_process import load_dataset_from_dataset_id
+
+
+@pytest.fixture(scope="session", autouse=True)
+def chdir_repo_root():
+    # Ensure relative paths (e.g., `example_data/custom`) resolve from the repo root
+    repo_root = Path(__file__).resolve().parent.parent
+    prev_cwd = Path.cwd()
+    os.chdir(repo_root)
+    try:
+        yield
+    finally:
+        os.chdir(prev_cwd)
 
 
 @pytest.fixture(scope="session")

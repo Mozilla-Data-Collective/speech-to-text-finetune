@@ -89,6 +89,7 @@ def run_finetuning(
         output_dir=local_output_dir,
         hub_model_id=hf_repo_name,
         report_to=["tensorboard"],
+        gradient_checkpointing_kwargs={"use_reentrant": False},
         **cfg.training_hp.model_dump(),
     )
 
@@ -105,7 +106,6 @@ def run_finetuning(
         logger.info(f"Loading {cfg.dataset_id}. Language selected {cfg.language}")
         dataset, save_proc_dataset_dir = load_dataset_from_dataset_id(
             dataset_id=cfg.dataset_id,
-            language_id=language_id,
         )
         dataset["train"] = load_subset_of_dataset(dataset["train"], cfg.n_train_samples)
         dataset["test"] = load_subset_of_dataset(dataset["test"], cfg.n_test_samples)
