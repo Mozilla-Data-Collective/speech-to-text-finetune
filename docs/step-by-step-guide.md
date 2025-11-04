@@ -160,6 +160,8 @@ Want to help improve or extend this Blueprint? Check out the **[Future Features 
 If you are interested in learning more about this topic, you might find the following resources helpful:
 - [Fine-Tune Whisper For Multilingual ASR with 🤗 Transformers](https://huggingface.co/blog/fine-tune-whisper) (Blog post by HuggingFace which inspired the implementation of the Blueprint!)
 
+- [Whisper Training Config Tips](https://huggingface.co/datasets/John6666/forum1/blob/main/whisper_oom_kv.md)
+
 - [Automatic Speech Recognition Course from HuggingFace](https://huggingface.co/learn/audio-course/en/chapter5/introduction) (Series of Blog posts)
 
 - [Fine-Tuning ASR Models: Key Definitions, Mechanics, and Use Cases](https://www.gladia.io/blog/fine-tuning-asr-models) (Blog post by Gladia)
