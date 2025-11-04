@@ -25,7 +25,7 @@ from speech_to_text_finetune.utils import (
 
 def load_mms_model_with_adapters(processor: Wav2Vec2Processor) -> Wav2Vec2ForCTC:
     """
-    Loads and freezes the base model, adds adapter layers, and makes them 
+    Loads and freezes the base 1b model, adds adapter layers, and makes them 
     trainable.
 
     Args:
@@ -102,7 +102,7 @@ def run_finetuning(
 
     dataset = preprocess_for_mms(dataset)
 
-    logger.info("Building new vocabulary")
+    logger.info("Building new vocabulary from training data")
     make_vocab(dataset, local_output_dir)
 
     tokenizer = Wav2Vec2CTCTokenizer.from_pretrained(
