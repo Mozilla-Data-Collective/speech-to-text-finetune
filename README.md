@@ -117,11 +117,11 @@ You can either load Common Voice via the Mozilla Data Collective Python SDK dire
 4. Finetune: `python src/speech_to_text_finetune/finetune_whisper.py`
 
 > [!NOTE]
-> To enable downloads via Python API, you must check the acceptance boxes on the MDC platform.
+> To enable downloads via Python API, you must accept the terms and conditions of the dataset you will be using on the MDC platform.
 
 #### Option B: Use a locally downloaded Common Voice dataset
 
-1. Download from https://datacollective.mozillafoundation.org/datasets (newest versions) or https://commonvoice.mozilla.org/en/datasets (older versions), pick your language/version.
+1. Download the dataset of your choice from https://datacollective.mozillafoundation.org/datasets.
 2. Extract the zip to a directory on your machine.
 3. Set `dataset_id` in `config.yaml` to the local dataset path. Example:
    ```
