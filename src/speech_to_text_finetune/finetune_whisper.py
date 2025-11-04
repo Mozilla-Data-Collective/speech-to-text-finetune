@@ -89,6 +89,7 @@ def run_finetuning(
         output_dir=local_output_dir,
         hub_model_id=hf_repo_name,
         report_to=["tensorboard"],
+        gradient_checkpointing_kwargs={"use_reentrant": False},
         **cfg.training_hp.model_dump(),
     )
 
