@@ -89,14 +89,14 @@ def load_dataset_from_dataset_id(
     3. The dataset_id is a path to a local, custom dataset directory.
 
     Args:
-        dataset_id: Path to a processed dataset directory or local dataset directory or HuggingFace dataset ID.
+        dataset_id: Path to a processed dataset directory or local dataset directory or MDC dataset ID.
 
     Returns:
         DatasetDict: A processed dataset ready for training with train/test splits
         Path: Path to save the processed directory
 
     Raises:
-        ValueError: If the dataset cannot be found locally or on HuggingFace
+        ValueError: If the dataset cannot be found locally or on MDC
     """
 
     try:
