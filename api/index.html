@@ -1680,7 +1680,7 @@ Possible cases:
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Path to a processed dataset directory or local dataset directory or HuggingFace dataset ID.</p>
+                <p>Path to a processed dataset directory or local dataset directory or MDC dataset ID.</p>
               </div>
             </td>
             <td>
@@ -1739,7 +1739,7 @@ Possible cases:
             </td>
             <td>
               <div class="doc-md-description">
-                <p>If the dataset cannot be found locally or on HuggingFace</p>
+                <p>If the dataset cannot be found locally or on MDC</p>
               </div>
             </td>
           </tr>
@@ -1811,14 +1811,14 @@ Possible cases:
 </span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="sd">    3. The dataset_id is a path to a local, custom dataset directory.</span>
 </span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a>
 </span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">        dataset_id: Path to a processed dataset directory or local dataset directory or HuggingFace dataset ID.</span>
+</span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">        dataset_id: Path to a processed dataset directory or local dataset directory or MDC dataset ID.</span>
 </span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a>
 </span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">    Returns:</span>
 </span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="sd">        DatasetDict: A processed dataset ready for training with train/test splits</span>
 </span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a><span class="sd">        Path: Path to save the processed directory</span>
 </span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a>
 </span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a><span class="sd">    Raises:</span>
-</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="sd">        ValueError: If the dataset cannot be found locally or on HuggingFace</span>
+</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="sd">        ValueError: If the dataset cannot be found locally or on MDC</span>
 </span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a>
 </span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>    <span class="k">try</span><span class="p">:</span>
