@@ -89,14 +89,14 @@ def load_dataset_from_dataset_id(
     3. The dataset_id is a path to a local, custom dataset directory.
 
     Args:
-        dataset_id: Path to a processed dataset directory or local dataset directory or MDC dataset ID.
+        dataset_id: Path to a processed dataset directory or local dataset directory or HuggingFace dataset ID.
 
     Returns:
         DatasetDict: A processed dataset ready for training with train/test splits
         Path: Path to save the processed directory
 
     Raises:
-        ValueError: If the dataset cannot be found locally or on MDC
+        ValueError: If the dataset cannot be found locally or on HuggingFace
     """
 
     try:
@@ -140,7 +140,7 @@ def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
         DatasetDict: HF Dataset dictionary that consists of two distinct Datasets
         with columns "audio" and "sentence"
     """
-    load_dotenv()
+    load_dotenv(override=True)
     if "MDC_API_KEY" not in os.environ:
         raise EnvironmentError(
             "MDC_API_KEY environment variable not set. "
@@ -437,7 +437,6 @@ def process_dataset(
         fn_kwargs={"max_label_length": 448},
         num_proc=1,
     )
-    import pdb;pdb.set_trace()
     proc_dataset_path = Path(proc_dataset_path)
     Path.mkdir(proc_dataset_path, parents=True, exist_ok=True)
     dataset.save_to_disk(proc_dataset_path)
