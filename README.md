@@ -76,7 +76,7 @@ The same instructions apply for the GitHub Codespaces option.
    - Create an account and get an API key from: https://datacollective.mozillafoundation.org/api-reference
    - Create a local `.env` file from the template and add your MDC API key:
      - `cp example_data/.env.example src/speech_to_text_finetune/.env`
-     - Edit `.env` and set `MDC_API_KEY=<your_api_key>`
+     - Edit `.env` and set `MDC_API_KEY=<your_api_key>`. NOTE: the variables in this .env file will override any existing environment variables with the same name.
      - Get an API key from: https://datacollective.mozillafoundation.org/api-reference
 3. \[Optional\] Log in to Hugging Face if you plan to track your models: `huggingface-cli login`
 
