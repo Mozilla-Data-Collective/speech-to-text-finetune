@@ -1,3 +1,4 @@
+import argparse
 from functools import partial
 from typing import Dict, Tuple
 import evaluate
@@ -11,6 +12,7 @@ from transformers import (Wav2Vec2CTCTokenizer, Wav2Vec2FeatureExtractor,
 from transformers.models.wav2vec2.modeling_wav2vec2 import \
     WAV2VEC2_ADAPTER_SAFE_FILE
 from transformers.models.whisper.english_normalizer import BasicTextNormalizer
+from safetensors.torch import save_file as safe_save_file
 from speech_to_text_finetune.config import load_config
 from speech_to_text_finetune.data_process import (
     DataCollatorCTCWithPadding,
@@ -204,6 +206,13 @@ def run_finetuning(
     eval_results = trainer.evaluate()
     logger.info(f"Evaluation complete. Results:\n\t {eval_results}")
 
+    adapter_file = WAV2VEC2_ADAPTER_SAFE_FILE.format(language_id)
+    adapter_file = os.path.join(training_args.output_dir, adapter_file)
+
+    safe_save_file(model._get_adapters(),
+                   adapter_file,
+                   metadata={"format": "pt"})
+
     model_card = create_model_card(
         model_id=cfg.model_id,
         dataset_id=cfg.dataset_id,
@@ -233,4 +242,9 @@ def run_finetuning(
 
 
 if __name__ == "__main__":
-    run_finetuning(config_path="example_data/config.yaml")
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("--path_to_config", "-c", 
+                           default="example_data/config.yaml", 
+                           help="Path to the experiment config yaml file")
+    args = argparser.parse_args()
+    run_finetuning(config_path=args.path_to_config)
