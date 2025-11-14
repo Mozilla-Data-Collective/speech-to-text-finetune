@@ -142,6 +142,19 @@ You can either load Common Voice via the Mozilla Data Collective Python SDK dire
 
 ## Troubleshooting
 
+> Q: What if the language I want to finetune on is not supported by Whisper?
+
+If the target language was NOT part of the Whisper model’s training data, choose a substitute language as follows:
+
+1. Find the closest related language (genetically or typologically) to your target language (for example using Glottolog: https://glottolog.org/).
+2. Check Whisper’s supported-language list (see the tokenizer file in the Transformers repo) and pick the closest matching language that is present there. 
+3. In your finetuning config or prompt, replace "English" with that chosen supported language. 
+4. If no related language from Glottolog appears in Whisper’s supported list, use "None" instead of a language label.
+
+Notes
+- Prefer a linguistically similar language (phonology/morphology/lexicon) over an unrelated high-resource language. 
+- This is a heuristic to give the model more appropriate token/decoder priors; results may still be limited if the target language is unseen.
+
 If you are having issues / bugs, check our [Troubleshooting](https://mozilla-ai.github.io/speech-to-text-finetune/getting-started/#troubleshooting) section, before opening a new issue.
 
 ## License

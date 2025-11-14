@@ -58,7 +58,7 @@ Initially, you can test the quality of the Speech-to-Text models available in Hu
    ```bash
    model_id: openai/whisper-tiny
    dataset_id: example_data/custom
-   language: English
+   language: English  # Set to None for multilingual training or if your language is not supported by Whisper
    repo_name: default
 
    training_hp:
