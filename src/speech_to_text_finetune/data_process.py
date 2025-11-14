@@ -2,6 +2,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
+
 import pandas as pd
 import torch
 from datacollective import DataCollective
@@ -17,14 +18,18 @@ def try_find_processed_version(
     dataset_id: str, language_id: str | None = None
 ) -> DatasetDict | Dataset | None:
     """
-    Try to load a processed version of the dataset if it exists locally. Check if:
+    Try to load a processed version of the dataset if it exists locally. Check
+      if:
     1. The dataset_id is a local path to a processed dataset directory.
     or
-    2. The dataset_id is a path to a local dataset, but a processed version already exists locally.
+    2. The dataset_id is a path to a local dataset, but a processed version 
+    already exists locally.
     or
-    3. The dataset_id is an MDC dataset ID, but a processed version already exists locally.
+    3. The dataset_id is an MDC dataset ID, but a processed version already 
+    exists locally.
     or
-    4. The dataset_id is a HuggingFace dataset ID, but a processed version already exists locally.
+    4. The dataset_id is a HuggingFace dataset ID, but a processed version 
+    already exists locally.
     """
     if Path(dataset_id).name == PROC_DATASET_DIR and Path(dataset_id).is_dir():
         if (
@@ -43,16 +48,18 @@ def try_find_processed_version(
     mdc_proc_dataset_path = _get_mdc_proc_dataset_path(dataset_id)
     if Path(mdc_proc_dataset_path).is_dir():
         logger.info(
-            f"Found processed dataset version at {mdc_proc_dataset_path} of MDC dataset {dataset_id}. "
-            f"Loading it directly and skipping processing again the original version."
+            f"Found processed dataset version at {mdc_proc_dataset_path} of "
+            f"MDC dataset {dataset_id}. Loading it directly and skipping "
+            f"processing again the original version."
         )
         return load_from_disk(mdc_proc_dataset_path)
 
     hf_proc_dataset_path = _get_hf_proc_dataset_path(dataset_id, language_id)
     if Path(hf_proc_dataset_path).is_dir():
         logger.info(
-            f"Found processed dataset version at {hf_proc_dataset_path} of HF dataset {dataset_id}. "
-            f"Loading it directly and skipping processing again the original version."
+            f"Found processed dataset version at {hf_proc_dataset_path} of HF "
+            f"dataset {dataset_id}. Loading it directly and skipping "
+            f"processing again the original version."
         )
         return load_from_disk(hf_proc_dataset_path)
 
@@ -79,33 +86,39 @@ def load_dataset_from_dataset_id(
     dataset_id: str
 ) -> Tuple[DatasetDict, Path]:
     """
-    This function loads a dataset, based on the dataset_id and the content of its directory (if it is a local path).
+    This function loads a dataset, based on the dataset_id and the content of 
+    its directory (if it is a local path).
     Possible cases:
-    1. The dataset_id is an MDC dataset id. In that case, an .env file with MDC_API_KEY must be set up.
+    1. The dataset_id is an MDC dataset id. In that case, an .env file with 
+    MDC_API_KEY must be set up.
 
     2. The dataset_id is a path to a local, Common Voice dataset directory.
 
     3. The dataset_id is a path to a local, custom dataset directory.
 
     Args:
-        dataset_id: Path to a processed dataset directory or local dataset directory or HuggingFace dataset ID.
+        dataset_id: Path to a processed dataset directory or local dataset 
+                    directory or MDC dataset ID.
 
     Returns:
-        DatasetDict: A processed dataset ready for training with train/test splits
+        DatasetDict: A processed dataset ready for training with train/test 
+                     splits
         Path: Path to save the processed directory
 
     Raises:
-        ValueError: If the dataset cannot be found locally or on HuggingFace
+        ValueError: If the dataset cannot be found locally or on MDC
     """
 
     try:
         dataset = _load_mdc_common_voice(dataset_id)
         return dataset, _get_mdc_proc_dataset_path(dataset_id)
     except InvalidCommonVoiceDatasetError:
-        # This means the dataset was found on MDC but isn't a Common Voice dataset;
+        # This means the dataset was found on MDC but isn't a Common Voice 
+        # dataset;
         raise
     except Exception as e:
-        # MDC load failed (dataset not present on MDC or transient MDC error) — try next loaders.
+        # MDC load failed (dataset not present on MDC or transient MDC error) —
+        # try next loaders.
         logger.debug(f"MDC load skipped for {dataset_id}: \n{e}")
 
     try:
@@ -126,6 +139,7 @@ def load_dataset_from_dataset_id(
         f"Or you are missing your MDC_API_KEY environment variable."
     )
 
+
 def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
     """
     Shared loader for MDC-hosted Common Voice (SPS/SCS).
@@ -133,13 +147,15 @@ def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
     the audio base directory and the audio column name.
 
     Args:
-        dataset_id: official Common Voice dataset id from the Mozilla Data Collective
+        dataset_id: official Common Voice dataset id from the Mozilla Data 
+                    Collective
 
     Returns:
-        DatasetDict: HF Dataset dictionary that consists of two distinct Datasets
+        DatasetDict: HF Dataset dictionary that consists of two distinct
+                     Datasets
         with columns "audio" and "sentence"
     """
-    load_dotenv()
+    load_dotenv(override=True)
     if "MDC_API_KEY" not in os.environ:
         raise EnvironmentError(
             "MDC_API_KEY environment variable not set. "
@@ -175,23 +191,30 @@ def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
         is_spontaneous_speech=is_spontaneous_speech,
     )
 
+
 def _check_if_local_common_voice_is_spontaneous(cv_data_dir: Path) -> bool:
     """
-    Check if the local Common Voice dataset is Spontaneous (SPS) or Scripted (SCS),
-    based on the expected directory structure and file names.
+    Check if the local Common Voice dataset is Spontaneous (SPS) or Scripted 
+    (SCS), based on the expected directory structure and file names.
     - SPS: contains `audios/` directory and `ss-corpus*.tsv` files
-    - SCS: contains `clips/` directory and `train.tsv`, `dev.tsv`, `test.tsv` files
+    - SCS: contains `clips/` directory and `train.tsv`, `dev.tsv`, `test.tsv`
+           files
     """
     entries = list(cv_data_dir.iterdir())
     dir_names = {p.name for p in entries if p.is_dir()}
     file_names = {p.name for p in entries if p.is_file()}
 
-    if "audios" in dir_names and any(name.startswith("ss-corpus") and name.endswith(".tsv") for name in file_names):
+    if ("audios" in dir_names 
+        and any(name.startswith("ss-corpus") and name.endswith(".tsv")
+                for name in file_names)):
         return True
-    elif "clips" in dir_names and {"train.tsv", "dev.tsv", "test.tsv"}.issubset(file_names):
+    elif ("clips" in dir_names 
+          and {"train.tsv", "dev.tsv", "test.tsv"}.issubset(file_names)):
         return False
     else:
-        raise ValueError("Unexpected dataset format. Could not determine if local Common Voice is SPS or SCS.")
+        raise ValueError("Unexpected dataset format. Could not determine if "
+                         "local Common Voice is SPS or SCS.")
+
 
 def _load_local_common_voice(cv_data_dir: str) -> DatasetDict:
     """
@@ -202,7 +225,9 @@ def _load_local_common_voice(cv_data_dir: str) -> DatasetDict:
     """
     cv_data_dir = Path(cv_data_dir)
 
-    is_spontaneous_speech = _check_if_local_common_voice_is_spontaneous(cv_data_dir)
+    is_spontaneous_speech = _check_if_local_common_voice_is_spontaneous(
+        cv_data_dir
+    )
 
     if is_spontaneous_speech:
         dataset_df = None
@@ -406,7 +431,8 @@ def process_dataset_for_whisper(
     proc_dataset_path: str | Path,
 ) -> DatasetDict | Dataset:
     """
-    Process dataset to the expected format by a Whisper model and then save it locally for future use.
+    Process dataset to the expected format by a Whisper model and then save it 
+    locally for future use.
     """
     # Create a new column that consists of the resampled audio samples in the right sample rate for whisper
     dataset = dataset.cast_column(
@@ -436,7 +462,6 @@ def process_dataset_for_whisper(
         fn_kwargs={"max_label_length": 448},
         num_proc=1,
     )
-
     proc_dataset_path = Path(proc_dataset_path)
     Path.mkdir(proc_dataset_path, parents=True, exist_ok=True)
     dataset.save_to_disk(proc_dataset_path)
@@ -464,6 +489,29 @@ def _process_inputs_and_labels_for_whisper(
     ]
 
     return batch
+
+
+def preprocess_for_mms(dataset):
+    """
+    More preprocessing can be added here in the future
+    """
+    for split in ("train", "test"):
+        dataset[split] = dataset[split].cast_column("audio", 
+                                                    Audio(sampling_rate=16_000))
+    return dataset
+
+
+def get_mms_dataset_prep_fn(processor):
+    def prepare_dataset(batch):
+        audio = batch["audio"]
+        batch["input_values"] = processor(
+            audio["array"], 
+            sampling_rate=audio["sampling_rate"]
+        ).input_values[0]
+        batch["input_length"] = len(batch["input_values"])
+        batch["labels"] = processor(text=batch["sentence"]).input_ids
+        return batch
+    return prepare_dataset
 
 
 @dataclass
@@ -508,6 +556,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
 
         return batch
 
+
 @dataclass
 class DataCollatorCTCWithPadding:
     """
@@ -521,8 +570,7 @@ class DataCollatorCTCWithPadding:
             features: List[Dict[str, Union[List[int], torch.Tensor]]]
             ) -> Dict[str, torch.Tensor]:
         input_features = [{"input_values": feature["input_values"]} 
-                          for feature in features]
-        
+                          for feature in features]     
         label_features = [{"input_ids": feature["labels"]} 
                           for feature in features]
         batch = self.processor.pad(
@@ -543,15 +591,6 @@ class DataCollatorCTCWithPadding:
         )
         batch["labels"] = labels
         return batch
-    
-def preprocess_for_mms(dataset):
-    """
-    More preprocessing can be added here in the future
-    """
-    for split in ("train", "test"):
-        dataset[split] = dataset[split].cast_column("audio", 
-                                                    Audio(sampling_rate=16_000))
-    return dataset
 
 
 class InvalidCommonVoiceDatasetError(ValueError):

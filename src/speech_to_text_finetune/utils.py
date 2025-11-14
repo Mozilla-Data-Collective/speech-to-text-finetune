@@ -1,4 +1,5 @@
 import json
+import numpy as np
 from typing import Dict
 
 from evaluate import EvaluationModule
@@ -41,6 +42,8 @@ def compute_wer_cer_metrics(
     """
 
     pred_ids = pred.predictions
+    if len(pred_ids.shape) == 3:
+        pred_ids = np.argmax(pred_ids, axis=-1)
     label_ids = pred.label_ids
 
     # replace -100 with the pad_token_id
@@ -160,26 +163,14 @@ def update_hf_model_card_with_fleurs_results(
     model_card.push_to_hub(model_repo_id)
 
 
-def extract_all_chars(batch):
-    all_text = " ".join(batch["sentence"])
-    vocab = list(set(all_text))
-    return {"vocab": [vocab], "all_text": [all_text]}
-
-
 def make_vocab(train_data, lang_code, path_to_output_dir):
     """
     Builds vocabulary from train and dev sets (maybe its better to exclude 
     dev vocab here but :shrug: we will not have the test vocab when getting 
     eval numbers on test).
     """
-    vocab_train = train_data.map(
-        extract_all_chars,
-        batched=True,
-        batch_size=-1,
-        keep_in_memory=True,
-    )
-
-    vocab_dict = {v: k for k, v in enumerate(sorted(vocab_train["vocab"][0]))}
+    chars = set([ch for sent in train_data["sentence"] for ch in set(sent)])
+    vocab_dict = {v: k for k, v in enumerate(sorted(chars))}
     vocab_dict["|"] = vocab_dict[" "]
     del vocab_dict[" "]
 
