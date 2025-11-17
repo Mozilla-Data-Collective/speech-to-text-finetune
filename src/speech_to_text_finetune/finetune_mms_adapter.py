@@ -1,18 +1,16 @@
-import argparse
 from functools import partial
 from typing import Dict, Tuple
 import evaluate
 import os
 import torch
 from loguru import logger
+from safetensors.torch import save_file as safe_save_file
 from transformers import (Wav2Vec2CTCTokenizer, Wav2Vec2FeatureExtractor, 
                           Wav2Vec2Processor, Wav2Vec2ForCTC, TrainingArguments, 
                           Trainer)
-
 from transformers.models.wav2vec2.modeling_wav2vec2 import \
     WAV2VEC2_ADAPTER_SAFE_FILE
 from transformers.models.whisper.english_normalizer import BasicTextNormalizer
-from safetensors.torch import save_file as safe_save_file
 from speech_to_text_finetune.config import load_config
 from speech_to_text_finetune.data_process import (
     DataCollatorCTCWithPadding,
@@ -23,15 +21,21 @@ from speech_to_text_finetune.utils import (
     get_hf_username,
     create_model_card,
     compute_wer_cer_metrics, 
-    make_vocab
+    make_vocab,
+    get_language_code_from_name
 )
 
 
 def load_mms_model_with_adapters(
-        processor: Wav2Vec2Processor) -> Wav2Vec2ForCTC:
+        model_id: str,
+        processor: Wav2Vec2Processor
+) -> Wav2Vec2ForCTC:
     """
-    Loads and freezes the base 1b model, adds adapter layers, and makes them 
-    trainable.
+    Loads and freezes the base 1b model, adds adapter layers, and makes them
+    trainable. Note that we simply pass the model id as provided by the user,
+    however not all wav2vec2 pretrained models support adapter layers (in fact
+    I think only mms-1b-all or any of its descendants do). If another model is
+    passed, an error will be propagated 
 
     Args:
       processor (Wav2Vec2Processor): a Wav2Vec2 processor object.
@@ -39,7 +43,7 @@ def load_mms_model_with_adapters(
       Model updated with adapter layers.
     """
     model = Wav2Vec2ForCTC.from_pretrained(
-        "facebook/mms-1b-all",
+        model_id,
         attention_dropout=0.0,
         hidden_dropout=0.0,
         feat_proj_dropout=0.0,
@@ -76,7 +80,16 @@ def run_finetuning(
     """
     cfg = load_config(config_path)
 
-    language_id = cfg.language.lower().replace(" ", "-")
+    language_name = cfg.language.lower
+
+    #
+    # Since we aren't limited to languages seen in Whisper pretraining, we
+    # can't use the Whisper library to lookup language codes. Instead, try to
+    # get the code from the language name provided in the config file, and if
+    # not found, just use the lower-cased, hyphen-separated language name as
+    # the identfier.
+    #
+    language_id = get_language_code_from_name(language_name, logger)
 
     if cfg.repo_name == "default":
         cfg.repo_name = f"{cfg.model_id.split('/')[1]}-{language_id}"
@@ -106,7 +119,12 @@ def run_finetuning(
     )
 
     logger.info(f"Loading {cfg.dataset_id}. Language selected {cfg.language}")
-    dataset, save_proc_dataset_dir = load_dataset_from_dataset_id(
+
+    #
+    # Since the MMS workflow doesn't require a ton of preprocessing, we don't
+    # worry about saving the "processed" dataset (hence the _)
+    #
+    dataset, _ = load_dataset_from_dataset_id(
         dataset_id=cfg.dataset_id,
     )
     dataset["train"] = load_subset_of_dataset(dataset["train"],
@@ -128,22 +146,23 @@ def run_finetuning(
     tokenizer.save_pretrained(local_output_dir)
 
     feature_extractor = Wav2Vec2FeatureExtractor(
-        feature_size=1, 
-        sampling_rate=16000, 
-        padding_value=0.0, 
-        do_normalize=True, 
+        feature_size=1,
+        # MMS uses 16k sampling rate, we change sampling rate in prep fn.
+        sampling_rate=16000,
+        padding_value=0.0,
+        do_normalize=True,
         return_attention_mask=True
     )
 
     processor = Wav2Vec2Processor(
-        feature_extractor=feature_extractor, 
+        feature_extractor=feature_extractor,
         tokenizer=tokenizer
     )
     prepare_dataset = get_mms_dataset_prep_fn(processor)
     for split in ("train", "test"):
         dataset[split] = dataset[split].map(prepare_dataset)
 
-    model = load_mms_model_with_adapters(processor)
+    model = load_mms_model_with_adapters(cfg.model_id, processor)
     data_collator = DataCollatorCTCWithPadding(processor=processor)
 
     wer = evaluate.load("wer")
@@ -206,13 +225,6 @@ def run_finetuning(
     eval_results = trainer.evaluate()
     logger.info(f"Evaluation complete. Results:\n\t {eval_results}")
 
-    adapter_file = WAV2VEC2_ADAPTER_SAFE_FILE.format(language_id)
-    adapter_file = os.path.join(training_args.output_dir, adapter_file)
-
-    safe_save_file(model._get_adapters(),
-                   adapter_file,
-                   metadata={"format": "pt"})
-
     model_card = create_model_card(
         model_id=cfg.model_id,
         dataset_id=cfg.dataset_id,
@@ -224,6 +236,12 @@ def run_finetuning(
         ft_eval_results=eval_results,
     )
     model_card.save(f"{local_output_dir}/README.md")
+
+    adapter_file = WAV2VEC2_ADAPTER_SAFE_FILE.format(language_id)
+    adapter_file = os.path.join(training_args.output_dir, adapter_file)
+    safe_save_file(model._get_adapters(), 
+                   adapter_file, 
+                   metadata={"format": "pt"})
 
     if cfg.training_hp.push_to_hub:
         logger.info(
@@ -242,9 +260,4 @@ def run_finetuning(
 
 
 if __name__ == "__main__":
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument("--path_to_config", "-c", 
-                           default="example_data/config.yaml", 
-                           help="Path to the experiment config yaml file")
-    args = argparser.parse_args()
-    run_finetuning(config_path=args.path_to_config)
+    run_finetuning(config_path="example_data/config.yaml")

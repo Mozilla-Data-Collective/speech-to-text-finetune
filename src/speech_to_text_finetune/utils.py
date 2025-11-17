@@ -3,6 +3,8 @@ import numpy as np
 from typing import Dict
 
 from evaluate import EvaluationModule
+import iso639
+from iso639 import Language, LanguageNotFoundError
 from huggingface_hub import (
     ModelCard,
     HfApi,
@@ -60,7 +62,9 @@ def compute_wer_cer_metrics(
     # compute normalised WER
     pred_str_norm = [normalizer(pred) for pred in pred_str]
     label_str_norm = [normalizer(label) for label in label_str]
-    # filtering step to only evaluate the samples that correspond to non-zero references:
+
+    # filtering step to only evaluate the samples that correspond to non-zero
+    # references:
     pred_str_norm = [
         pred_str_norm[i]
         for i in range(len(pred_str_norm))
@@ -72,14 +76,32 @@ def compute_wer_cer_metrics(
         if len(label_str_norm[i]) > 0
     ]
 
-    wer = 100 * wer.compute(predictions=pred_str_norm, references=label_str_norm)
-    cer = 100 * cer.compute(predictions=pred_str_norm, references=label_str_norm)
+    wer = 100 * wer.compute(predictions=pred_str_norm,
+                            references=label_str_norm)
+    cer = 100 * cer.compute(predictions=pred_str_norm,
+                            references=label_str_norm)
 
-    return {"wer_ortho": wer_ortho, "wer": wer, "cer_ortho": cer_ortho, "cer": cer}
+    return {"wer_ortho": wer_ortho,
+            "wer": wer,
+            "cer_ortho": cer_ortho,
+            "cer": cer}
+
+
+def get_language_code_from_name(language_name, logger):
+    try:
+        code = Language.from_name(language_name).part3
+    except LanguageNotFoundError:
+        code = language_name.lower().replace(" ", "-")
+        logger.warning(
+            f"Could not find an ISO 639-3 code associated with language "
+            f"name {language_name}. Using {code} as the identifier."
+        )
+    return code
 
 
 def get_hf_username() -> str:
     return HfApi().whoami()["name"]
+
 
 def create_model_card(
     model_id: str,

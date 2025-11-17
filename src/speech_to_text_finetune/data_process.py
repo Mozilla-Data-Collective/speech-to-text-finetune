@@ -491,26 +491,23 @@ def _process_inputs_and_labels_for_whisper(
     return batch
 
 
-def preprocess_for_mms(dataset):
-    """
-    More preprocessing can be added here in the future
-    """
-    for split in ("train", "test"):
-        dataset[split] = dataset[split].cast_column("audio", 
-                                                    Audio(sampling_rate=16_000))
-    return dataset
-
-
 def get_mms_dataset_prep_fn(processor):
     def prepare_dataset(batch):
+        batch = batch.cast_column("audio", Audio(sampling_rate=16000))
         audio = batch["audio"]
         batch["input_values"] = processor(
             audio["array"], 
             sampling_rate=audio["sampling_rate"]
         ).input_values[0]
         batch["input_length"] = len(batch["input_values"])
+
+        #
+        # Here, we could add some text cleaning/preprocessing, but currently
+        # the assumption is that this will be done prior to fine-tuning.
+        #
         batch["labels"] = processor(text=batch["sentence"]).input_ids
         return batch
+        
     return prepare_dataset
 
 
