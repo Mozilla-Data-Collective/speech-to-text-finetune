@@ -113,6 +113,9 @@ def load_dataset_from_dataset_id(dataset_id: str) -> Tuple[DatasetDict, Path]:
     except FileNotFoundError:
         # Not a local Common Voice dataset — try next loader.
         pass
+    except ValueError:
+        # Unexpected dataset format — try next loader.
+        pass
 
     try:
         dataset = _load_custom_dataset(dataset_id)
