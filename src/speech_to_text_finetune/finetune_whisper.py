@@ -73,7 +73,7 @@ def run_finetuning(
         )
 
     device = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU"
-    logger.info(        f"Loading {cfg.model_id} on {device}."    )
+    logger.info(f"Loading {cfg.model_id} on {device}.")
     model = WhisperForConditionalGeneration.from_pretrained(cfg.model_id)
 
     # disable cache during training since it's incompatible with gradient checkpointing
@@ -85,12 +85,15 @@ def run_finetuning(
         )
         # set language and task for generation during inference and re-enable cache
         model.generate = partial(
-            model.generate, language=cfg.language.lower(), task="transcribe", use_cache=True
+            model.generate,
+            language=cfg.language.lower(),
+            task="transcribe",
+            use_cache=True,
         )
     else:
         logger.info("Language was set to 'none', so NOT configuring any language.")
         processor = WhisperProcessor.from_pretrained(cfg.model_id, task="transcribe")
-        model.generate = partial(            model.generate, task="transcribe", use_cache=True        )
+        model.generate = partial(model.generate, task="transcribe", use_cache=True)
 
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
 
@@ -198,8 +201,11 @@ def run_finetuning(
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("--path_to_config", "-c", 
-                           default="example_data/config.yaml", 
-                           help="Path to the experiment config yaml file")
+    argparser.add_argument(
+        "--path_to_config",
+        "-c",
+        default="example_data/config.yaml",
+        help="Path to the experiment config yaml file",
+    )
     args = argparser.parse_args()
     run_finetuning(config_path=args.path_to_config)
