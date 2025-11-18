@@ -86,6 +86,7 @@ def test_remove_long_audio_and_transcription_samples(
         processor=mock_whisper_processor,
         batch_size=1,
         proc_dataset_path=str(tmp_path),
+        num_proc=None,
     )
     assert len(processed_dataset["train"]) == 1
     assert processed_dataset["train"][0]["sentence"] == "This is a valid audio sample."

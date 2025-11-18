@@ -420,6 +420,7 @@ def process_dataset(
     processor: WhisperProcessor,
     batch_size: int,
     proc_dataset_path: str | Path,
+    num_proc: int | None = 1,
 ) -> DatasetDict | Dataset:
     """
     Process dataset to the expected format by a Whisper model and then save it locally for future use.
@@ -437,20 +438,20 @@ def process_dataset(
         else None,
         batched=True,
         batch_size=batch_size,
-        num_proc=1,
+        num_proc=num_proc,
     )
 
     dataset = dataset.filter(
         _is_audio_in_length_range,
         input_columns=["input_length"],
         fn_kwargs={"max_input_length": 30.0},
-        num_proc=1,
+        num_proc=num_proc,
     )
     dataset = dataset.filter(
         _are_labels_in_length_range,
         input_columns=["labels"],
         fn_kwargs={"max_label_length": 448},
-        num_proc=1,
+        num_proc=num_proc,
     )
     proc_dataset_path = Path(proc_dataset_path)
     Path.mkdir(proc_dataset_path, parents=True, exist_ok=True)
