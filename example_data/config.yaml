@@ -1,6 +1,6 @@
 model_id: openai/whisper-tiny
 dataset_id: cmflnuzw43exbql8uukllvnqg
-language: English
+language: None  # Set to None for multilingual training or if your language is not supported by Whisper
 repo_name: default
 n_train_samples: -1
 n_test_samples: -1

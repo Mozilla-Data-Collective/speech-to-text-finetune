@@ -76,9 +76,7 @@ def _get_local_proc_dataset_path(dataset_id: str) -> Path:
     return Path(dataset_id).resolve() / PROC_DATASET_DIR
 
 
-def load_dataset_from_dataset_id(
-    dataset_id: str
-) -> Tuple[DatasetDict, Path]:
+def load_dataset_from_dataset_id(dataset_id: str) -> Tuple[DatasetDict, Path]:
     """
     This function loads a dataset, based on the dataset_id and the content of its directory (if it is a local path).
     Possible cases:
@@ -115,6 +113,9 @@ def load_dataset_from_dataset_id(
     except FileNotFoundError:
         # Not a local Common Voice dataset — try next loader.
         pass
+    except ValueError:
+        # Unexpected dataset format — try next loader.
+        pass
 
     try:
         dataset = _load_custom_dataset(dataset_id)
@@ -126,6 +127,7 @@ def load_dataset_from_dataset_id(
         f"Could not find dataset {dataset_id} locally or at MDC. "
         f"Or you are missing your MDC_API_KEY environment variable."
     )
+
 
 def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
     """
@@ -176,6 +178,7 @@ def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
         is_spontaneous_speech=is_spontaneous_speech,
     )
 
+
 def _check_if_local_common_voice_is_spontaneous(cv_data_dir: Path) -> bool:
     """
     Check if the local Common Voice dataset is Spontaneous (SPS) or Scripted (SCS),
@@ -187,12 +190,19 @@ def _check_if_local_common_voice_is_spontaneous(cv_data_dir: Path) -> bool:
     dir_names = {p.name for p in entries if p.is_dir()}
     file_names = {p.name for p in entries if p.is_file()}
 
-    if "audios" in dir_names and any(name.startswith("ss-corpus") and name.endswith(".tsv") for name in file_names):
+    if "audios" in dir_names and any(
+        name.startswith("ss-corpus") and name.endswith(".tsv") for name in file_names
+    ):
         return True
-    elif "clips" in dir_names and {"train.tsv", "dev.tsv", "test.tsv"}.issubset(file_names):
+    elif "clips" in dir_names and {"train.tsv", "dev.tsv", "test.tsv"}.issubset(
+        file_names
+    ):
         return False
     else:
-        raise ValueError("Unexpected dataset format. Could not determine if local Common Voice is SPS or SCS.")
+        raise ValueError(
+            "Unexpected dataset format. Could not determine if local Common Voice is SPS or SCS."
+        )
+
 
 def _load_local_common_voice(cv_data_dir: str) -> DatasetDict:
     """
@@ -208,7 +218,11 @@ def _load_local_common_voice(cv_data_dir: str) -> DatasetDict:
     if is_spontaneous_speech:
         dataset_df = None
         for file in cv_data_dir.iterdir():
-            if file.is_file() and file.name.startswith("ss-corpus") and file.name.endswith(".tsv"):
+            if (
+                file.is_file()
+                and file.name.startswith("ss-corpus")
+                and file.name.endswith(".tsv")
+            ):
                 dataset_df = pd.read_csv(file, sep="\t")
                 break
         if dataset_df is None:
@@ -276,6 +290,7 @@ def _build_cv_dataset_from_df(
         }
     )
 
+
 def _join_audio_path(audio_dir: Path, rel_path: str) -> str:
     """
     Safely join base audio directory with the relative file path.
@@ -285,6 +300,7 @@ def _join_audio_path(audio_dir: Path, rel_path: str) -> str:
     if os.path.isabs(p):
         return p
     return str((audio_dir / p).resolve())
+
 
 def _replace_rel_path_with_abs_path(
     df: pd.DataFrame, audio_dir: str | Path, audio_clip_column: str
@@ -372,8 +388,7 @@ def load_and_proc_hf_fleurs(
     )
     dataset = dataset.select_columns(["audio", "sentence"])
 
-    save_proc_dataset_path = _get_hf_proc_dataset_path(
-        fleurs_dataset_id, language_id)
+    save_proc_dataset_path = _get_hf_proc_dataset_path(fleurs_dataset_id, language_id)
     logger.info("Processing dataset...")
     dataset = process_dataset(
         dataset=dataset,
@@ -405,6 +420,7 @@ def process_dataset(
     processor: WhisperProcessor,
     batch_size: int,
     proc_dataset_path: str | Path,
+    num_proc: int | None = 1,
 ) -> DatasetDict | Dataset:
     """
     Process dataset to the expected format by a Whisper model and then save it locally for future use.
@@ -422,20 +438,20 @@ def process_dataset(
         else None,
         batched=True,
         batch_size=batch_size,
-        num_proc=1,
+        num_proc=num_proc,
     )
 
     dataset = dataset.filter(
         _is_audio_in_length_range,
         input_columns=["input_length"],
         fn_kwargs={"max_input_length": 30.0},
-        num_proc=1,
+        num_proc=num_proc,
     )
     dataset = dataset.filter(
         _are_labels_in_length_range,
         input_columns=["labels"],
         fn_kwargs={"max_label_length": 448},
-        num_proc=1,
+        num_proc=num_proc,
     )
     proc_dataset_path = Path(proc_dataset_path)
     Path.mkdir(proc_dataset_path, parents=True, exist_ok=True)
@@ -488,11 +504,9 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         )
 
         # get the tokenized label sequences
-        label_features = [{"input_ids": feature["labels"]}
-                          for feature in features]
+        label_features = [{"input_ids": feature["labels"]} for feature in features]
         # pad the labels to max length
-        labels_batch = self.processor.tokenizer.pad(
-            label_features, return_tensors="pt")
+        labels_batch = self.processor.tokenizer.pad(label_features, return_tensors="pt")
 
         # replace padding with -100 to ignore loss correctly
         labels = labels_batch["input_ids"].masked_fill(
@@ -511,4 +525,5 @@ class DataCollatorSpeechSeq2SeqWithPadding:
 
 class InvalidCommonVoiceDatasetError(ValueError):
     """Raised when an MDC Common Voice dataset cannot be classified as SPS or SCS."""
+
     pass
