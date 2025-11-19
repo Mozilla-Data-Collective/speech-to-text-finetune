@@ -3,6 +3,7 @@ from typing import Dict, Tuple
 import evaluate
 import os
 import torch
+from datasets import Audio
 from loguru import logger
 from safetensors.torch import save_file as safe_save_file
 from transformers import (Wav2Vec2CTCTokenizer, Wav2Vec2FeatureExtractor, 
@@ -15,7 +16,7 @@ from speech_to_text_finetune.config import load_config
 from speech_to_text_finetune.data_process import (
     DataCollatorCTCWithPadding,
     load_dataset_from_dataset_id,
-    load_subset_of_dataset, preprocess_for_mms, get_mms_dataset_prep_fn
+    load_subset_of_dataset, get_mms_dataset_prep_fn
 )
 from speech_to_text_finetune.utils import (
     get_hf_username,
@@ -80,7 +81,7 @@ def run_finetuning(
     """
     cfg = load_config(config_path)
 
-    language_name = cfg.language.lower
+    language_name = cfg.language.lower()
 
     #
     # Since we aren't limited to languages seen in Whisper pretraining, we
@@ -129,11 +130,13 @@ def run_finetuning(
     )
     dataset["train"] = load_subset_of_dataset(dataset["train"],
                                               cfg.n_train_samples)
+    dataset["train"] = dataset["train"].cast_column("audio",
+                                                    Audio(sampling_rate=16000))
     dataset["test"] = load_subset_of_dataset(dataset["test"],
                                              cfg.n_test_samples)
-    logger.info("Processing dataset...")
-
-    dataset = preprocess_for_mms(dataset)
+    dataset["test"] = dataset["test"].cast_column("audio",
+                                                  Audio(sampling_rate=16000))
+    logger.info("Processing dataset...")    
 
     logger.info("Building new vocabulary from training data")
     make_vocab(dataset["train"], language_id, local_output_dir)

@@ -493,7 +493,6 @@ def _process_inputs_and_labels_for_whisper(
 
 def get_mms_dataset_prep_fn(processor):
     def prepare_dataset(batch):
-        batch = batch.cast_column("audio", Audio(sampling_rate=16000))
         audio = batch["audio"]
         batch["input_values"] = processor(
             audio["array"], 
