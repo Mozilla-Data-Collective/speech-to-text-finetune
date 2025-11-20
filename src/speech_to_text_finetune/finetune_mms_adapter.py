@@ -81,7 +81,7 @@ def run_finetuning(
     """
     cfg = load_config(config_path)
 
-    language_name = cfg.language.lower()
+    language_name = cfg.language
 
     #
     # Since we aren't limited to languages seen in Whisper pretraining, we
@@ -123,7 +123,8 @@ def run_finetuning(
 
     #
     # Since the MMS workflow doesn't require a ton of preprocessing, we don't
-    # worry about saving the "processed" dataset (hence the _)
+    # worry about saving the "processed" dataset (hence the _).
+    # We do need to make sure the sampling rate is 16k though
     #
     dataset, _ = load_dataset_from_dataset_id(
         dataset_id=cfg.dataset_id,
@@ -150,7 +151,7 @@ def run_finetuning(
 
     feature_extractor = Wav2Vec2FeatureExtractor(
         feature_size=1,
-        # MMS uses 16k sampling rate, we change sampling rate in prep fn.
+        # MMS uses 16k sampling rate, we changed sampling rate above.
         sampling_rate=16000,
         padding_value=0.0,
         do_normalize=True,
