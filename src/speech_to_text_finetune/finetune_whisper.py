@@ -31,7 +31,7 @@ from speech_to_text_finetune.utils import (
 
 
 def run_finetuning(
-    config_path: str = "config.yaml",
+    config_path: str = "config_whisper.yaml",
 ) -> Tuple[Dict, Dict]:
     """
     Complete pipeline for preprocessing the Common Voice dataset and then finetuning a Whisper model on it.
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     argparser.add_argument(
         "--path_to_config",
         "-c",
-        default="example_data/config.yaml",
+        default="example_data/config_whisper.yaml",
         help="Path to the experiment config yaml file",
     )
     args = argparser.parse_args()
