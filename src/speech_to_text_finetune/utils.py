@@ -3,7 +3,6 @@ import numpy as np
 from typing import Dict
 
 from evaluate import EvaluationModule
-import iso639
 from iso639 import Language, LanguageNotFoundError
 from huggingface_hub import (
     ModelCard,
@@ -76,15 +75,10 @@ def compute_wer_cer_metrics(
         if len(label_str_norm[i]) > 0
     ]
 
-    wer = 100 * wer.compute(predictions=pred_str_norm,
-                            references=label_str_norm)
-    cer = 100 * cer.compute(predictions=pred_str_norm,
-                            references=label_str_norm)
+    wer = 100 * wer.compute(predictions=pred_str_norm, references=label_str_norm)
+    cer = 100 * cer.compute(predictions=pred_str_norm, references=label_str_norm)
 
-    return {"wer_ortho": wer_ortho,
-            "wer": wer,
-            "cer_ortho": cer_ortho,
-            "cer": cer}
+    return {"wer_ortho": wer_ortho, "wer": wer, "cer_ortho": cer_ortho, "cer": cer}
 
 
 def get_language_code_from_name(language_name, logger):
@@ -187,8 +181,8 @@ def update_hf_model_card_with_fleurs_results(
 
 def make_vocab(train_data, lang_code, path_to_output_dir):
     """
-    Builds vocabulary from train and dev sets (maybe its better to exclude 
-    dev vocab here but :shrug: we will not have the test vocab when getting 
+    Builds vocabulary from train and dev sets (maybe its better to exclude
+    dev vocab here but :shrug: we will not have the test vocab when getting
     eval numbers on test).
     """
     chars = set([ch for sent in train_data["sentence"] for ch in set(sent)])
@@ -200,5 +194,5 @@ def make_vocab(train_data, lang_code, path_to_output_dir):
     vocab_dict["[PAD]"] = len(vocab_dict)
 
     new_vocab_dict = {lang_code: vocab_dict}
-    with open(f'{path_to_output_dir}/vocab.json', 'w') as vocab_file:
+    with open(f"{path_to_output_dir}/vocab.json", "w") as vocab_file:
         json.dump(new_vocab_dict, vocab_file)
