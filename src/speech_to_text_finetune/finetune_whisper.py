@@ -44,8 +44,12 @@ def run_finetuning(
     """
     cfg = load_config(config_path)
 
-    language_id = TO_LANGUAGE_CODE.get(cfg.language.lower())
-    if not language_id:
+    language = cfg.language.lower()
+    if language in TO_LANGUAGE_CODE:
+        language_id = TO_LANGUAGE_CODE[language]
+    elif language == "none":
+        language_id = None
+    else:
         raise ValueError(
             f"\nThis language is not inherently supported by this Whisper model. However you can still “teach” Whisper "
             f"the language of your choice!\nVisit https://glottolog.org/, find which language is most closely "
@@ -54,7 +58,8 @@ def run_finetuning(
         )
 
     if cfg.repo_name == "default":
-        cfg.repo_name = f"{cfg.model_id.split('/')[1]}-{language_id}"
+        lang_id_suffix = f"-{language_id}" if language_id is not None else ""
+        cfg.repo_name = f"{cfg.model_id.split('/')[1]}{lang_id_suffix}"
     local_output_dir = f"./artifacts/{cfg.repo_name}"
 
     logger.info(f"Finetuning starts soon, results saved locally at {local_output_dir}")
@@ -68,20 +73,27 @@ def run_finetuning(
         )
 
     device = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU"
-    logger.info(
-        f"Loading {cfg.model_id} on {device} and configuring it for {cfg.language}."
-    )
-    processor = WhisperProcessor.from_pretrained(
-        cfg.model_id, language=cfg.language, task="transcribe"
-    )
+    logger.info(f"Loading {cfg.model_id} on {device}.")
     model = WhisperForConditionalGeneration.from_pretrained(cfg.model_id)
 
     # disable cache during training since it's incompatible with gradient checkpointing
     model.config.use_cache = False
-    # set language and task for generation during inference and re-enable cache
-    model.generate = partial(
-        model.generate, language=cfg.language.lower(), task="transcribe", use_cache=True
-    )
+    if language_id is not None:
+        logger.info(f"Configuring {cfg.model_id} for {cfg.language}")
+        processor = WhisperProcessor.from_pretrained(
+            cfg.model_id, language=cfg.language, task="transcribe"
+        )
+        # set language and task for generation during inference and re-enable cache
+        model.generate = partial(
+            model.generate,
+            language=cfg.language.lower(),
+            task="transcribe",
+            use_cache=True,
+        )
+    else:
+        logger.info("Language was set to 'none', so NOT configuring any language.")
+        processor = WhisperProcessor.from_pretrained(cfg.model_id, task="transcribe")
+        model.generate = partial(model.generate, task="transcribe", use_cache=True)
 
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
 
@@ -103,7 +115,7 @@ def run_finetuning(
         dataset["train"] = load_subset_of_dataset(dataset["train"], cfg.n_train_samples)
         dataset["test"] = load_subset_of_dataset(dataset["test"], cfg.n_test_samples)
     else:
-        logger.info(f"Loading {cfg.dataset_id}. Language selected {cfg.language}")
+        logger.info(f"Loading {cfg.dataset_id}.")
         dataset, save_proc_dataset_dir = load_dataset_from_dataset_id(
             dataset_id=cfg.dataset_id,
         )
@@ -189,8 +201,11 @@ def run_finetuning(
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("--path_to_config", "-c", 
-                           default="example_data/config.yaml", 
-                           help="Path to the experiment config yaml file")
+    argparser.add_argument(
+        "--path_to_config",
+        "-c",
+        default="example_data/config.yaml",
+        help="Path to the experiment config yaml file",
+    )
     args = argparser.parse_args()
     run_finetuning(config_path=args.path_to_config)

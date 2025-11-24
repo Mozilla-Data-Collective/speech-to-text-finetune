@@ -76,7 +76,7 @@ The same instructions apply for the GitHub Codespaces option.
    - Create an account and get an API key from: https://datacollective.mozillafoundation.org/api-reference
    - Create a local `.env` file from the template and add your MDC API key:
      - `cp example_data/.env.example src/speech_to_text_finetune/.env`
-     - Edit `.env` and set `MDC_API_KEY=<your_api_key>`
+     - Edit `.env` and set `MDC_API_KEY=<your_api_key>`. NOTE: the variables in this .env file will override any existing environment variables with the same name.
      - Get an API key from: https://datacollective.mozillafoundation.org/api-reference
 3. \[Optional\] Log in to Hugging Face if you plan to track your models: `huggingface-cli login`
 
@@ -99,7 +99,7 @@ You can either load Common Voice via the Mozilla Data Collective Python SDK dire
 
 #### Option A: Load via Mozilla Data Collective Python SDK
 
-1. Ensure `.env` exists and contains a valid `MDC_API_KEY` (see Setup above).
+1. Ensure `.env` exists and contains a valid `MDC_API_KEY` under the `src/speech_to_text_finetune` directory (see Setup above).
 2. Identify the MDC dataset id for your language (Scripted or Spontaneous Common Voice) from the Mozilla Data Collective portal.
     - You can find the `id` by looking at the URL of the dataset's page on MDC platform. The ID is located at the very end of the URL, after the `/datasets/` path. For example, for URL `https://datacollective.mozillafoundation.org/datasets/cmflnuzw6lrt9e6ui4kwcshvn` dataset id will be `cmflnuzw6lrt9e6ui4kwcshvn`.
 3. Set `dataset_id` in `config.yaml` to the MDC dataset id. Example:
@@ -142,6 +142,19 @@ You can either load Common Voice via the Mozilla Data Collective Python SDK dire
 
 ## Troubleshooting
 
+> Q: What if the language I want to finetune on is not supported by Whisper?
+
+If the target language was NOT part of the Whisper model’s training data, choose a substitute language as follows:
+
+1. Find the closest related language (genetically or typologically) to your target language (for example using Glottolog: https://glottolog.org/).
+2. Check Whisper’s supported-language list (see the tokenizer file in the Transformers repo) and pick the closest matching language that is present there.
+3. In your finetuning config or prompt, replace "English" with that chosen supported language.
+4. If no related language from Glottolog appears in Whisper’s supported list, use "None" instead of a language label.
+
+Notes
+- Prefer a linguistically similar language (phonology/morphology/lexicon) over an unrelated high-resource language.
+- This is a heuristic to give the model more appropriate token/decoder priors; results may still be limited if the target language is unseen.
+
 If you are having issues / bugs, check our [Troubleshooting](https://mozilla-ai.github.io/speech-to-text-finetune/getting-started/#troubleshooting) section, before opening a new issue.
 
 ## License
@@ -151,4 +164,3 @@ This project is licensed under the Apache 2.0 License. See the [LICENSE](LICENSE
 ## Contributing
 
 Contributions are welcome! To get started, you can check out the [CONTRIBUTING.md](CONTRIBUTING.md) file.
-

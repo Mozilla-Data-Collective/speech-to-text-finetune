@@ -58,7 +58,7 @@ Initially, you can test the quality of the Speech-to-Text models available in Hu
    ```bash
    model_id: openai/whisper-tiny
    dataset_id: example_data/custom
-   language: English
+   language: English  # Set to None for multilingual training or if your language is not supported by Whisper
    repo_name: default
 
    training_hp:
@@ -81,7 +81,7 @@ Note that if you select `push_to_hub: True` you need to have an HF account and l
 Pick one of the following:
 
 - Option A: Mozilla Data Collective Python SDK
-  1. Ensure `.env` contains a valid `MDC_API_KEY`.
+  1. Ensure `.env` contains a valid `MDC_API_KEY`  under the `src/speech_to_text_finetune` directory.
   2. Find the MDC dataset id for your language (Scripted or Spontaneous).
   3. Configure `config.yaml` with the MDC dataset id:
      ```bash

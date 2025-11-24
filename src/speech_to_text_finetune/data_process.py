@@ -18,18 +18,14 @@ def try_find_processed_version(
     dataset_id: str, language_id: str | None = None
 ) -> DatasetDict | Dataset | None:
     """
-    Try to load a processed version of the dataset if it exists locally. Check
-      if:
+    Try to load a processed version of the dataset if it exists locally. Check if:
     1. The dataset_id is a local path to a processed dataset directory.
     or
-    2. The dataset_id is a path to a local dataset, but a processed version 
-    already exists locally.
+    2. The dataset_id is a path to a local dataset, but a processed version already exists locally.
     or
-    3. The dataset_id is an MDC dataset ID, but a processed version already 
-    exists locally.
+    3. The dataset_id is an MDC dataset ID, but a processed version already exists locally.
     or
-    4. The dataset_id is a HuggingFace dataset ID, but a processed version 
-    already exists locally.
+    4. The dataset_id is a HuggingFace dataset ID, but a processed version already exists locally.
     """
     if Path(dataset_id).name == PROC_DATASET_DIR and Path(dataset_id).is_dir():
         if (
@@ -48,18 +44,16 @@ def try_find_processed_version(
     mdc_proc_dataset_path = _get_mdc_proc_dataset_path(dataset_id)
     if Path(mdc_proc_dataset_path).is_dir():
         logger.info(
-            f"Found processed dataset version at {mdc_proc_dataset_path} of "
-            f"MDC dataset {dataset_id}. Loading it directly and skipping "
-            f"processing again the original version."
+            f"Found processed dataset version at {mdc_proc_dataset_path} of MDC dataset {dataset_id}. "
+            f"Loading it directly and skipping processing again the original version."
         )
         return load_from_disk(mdc_proc_dataset_path)
 
     hf_proc_dataset_path = _get_hf_proc_dataset_path(dataset_id, language_id)
     if Path(hf_proc_dataset_path).is_dir():
         logger.info(
-            f"Found processed dataset version at {hf_proc_dataset_path} of HF "
-            f"dataset {dataset_id}. Loading it directly and skipping "
-            f"processing again the original version."
+            f"Found processed dataset version at {hf_proc_dataset_path} of HF dataset {dataset_id}. "
+            f"Loading it directly and skipping processing again the original version."
         )
         return load_from_disk(hf_proc_dataset_path)
 
@@ -82,27 +76,21 @@ def _get_local_proc_dataset_path(dataset_id: str) -> Path:
     return Path(dataset_id).resolve() / PROC_DATASET_DIR
 
 
-def load_dataset_from_dataset_id(
-    dataset_id: str
-) -> Tuple[DatasetDict, Path]:
+def load_dataset_from_dataset_id(dataset_id: str) -> Tuple[DatasetDict, Path]:
     """
-    This function loads a dataset, based on the dataset_id and the content of 
-    its directory (if it is a local path).
+    This function loads a dataset, based on the dataset_id and the content of its directory (if it is a local path).
     Possible cases:
-    1. The dataset_id is an MDC dataset id. In that case, an .env file with 
-    MDC_API_KEY must be set up.
+    1. The dataset_id is an MDC dataset id. In that case, an .env file with MDC_API_KEY must be set up.
 
     2. The dataset_id is a path to a local, Common Voice dataset directory.
 
     3. The dataset_id is a path to a local, custom dataset directory.
 
     Args:
-        dataset_id: Path to a processed dataset directory or local dataset 
-                    directory or MDC dataset ID.
+        dataset_id: Path to a processed dataset directory or local dataset directory or MDC dataset ID.
 
     Returns:
-        DatasetDict: A processed dataset ready for training with train/test 
-                     splits
+        DatasetDict: A processed dataset ready for training with train/test splits
         Path: Path to save the processed directory
 
     Raises:
@@ -113,12 +101,10 @@ def load_dataset_from_dataset_id(
         dataset = _load_mdc_common_voice(dataset_id)
         return dataset, _get_mdc_proc_dataset_path(dataset_id)
     except InvalidCommonVoiceDatasetError:
-        # This means the dataset was found on MDC but isn't a Common Voice 
-        # dataset;
+        # This means the dataset was found on MDC but isn't a Common Voice dataset;
         raise
     except Exception as e:
-        # MDC load failed (dataset not present on MDC or transient MDC error) —
-        # try next loaders.
+        # MDC load failed (dataset not present on MDC or transient MDC error) — try next loaders.
         logger.debug(f"MDC load skipped for {dataset_id}: \n{e}")
 
     try:
@@ -126,6 +112,9 @@ def load_dataset_from_dataset_id(
         return dataset, _get_local_proc_dataset_path(dataset_id)
     except FileNotFoundError:
         # Not a local Common Voice dataset — try next loader.
+        pass
+    except ValueError:
+        # Unexpected dataset format — try next loader.
         pass
 
     try:
@@ -135,8 +124,11 @@ def load_dataset_from_dataset_id(
         pass
 
     raise ValueError(
-        f"Could not find dataset {dataset_id} locally or at MDC. "
-        f"Or you are missing your MDC_API_KEY environment variable."
+        f"There was an error trying to load the dataset: {dataset_id}. "
+        f"If the dataset id is a valid MDC identifier, please check that"
+        f"- you have agreed to the terms & conditions of the specific dataset."
+        f"- you have set your MDC_API_KEY environment variable."
+        f"If the dataset id is a local path, please check that you are using the absolute path and it exists."
     )
 
 
@@ -147,12 +139,10 @@ def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
     the audio base directory and the audio column name.
 
     Args:
-        dataset_id: official Common Voice dataset id from the Mozilla Data 
-                    Collective
+        dataset_id: official Common Voice dataset id from the Mozilla Data Collective
 
     Returns:
-        DatasetDict: HF Dataset dictionary that consists of two distinct
-                     Datasets
+        DatasetDict: HF Dataset dictionary that consists of two distinct Datasets
         with columns "audio" and "sentence"
     """
     load_dotenv(override=True)
@@ -194,26 +184,27 @@ def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
 
 def _check_if_local_common_voice_is_spontaneous(cv_data_dir: Path) -> bool:
     """
-    Check if the local Common Voice dataset is Spontaneous (SPS) or Scripted 
-    (SCS), based on the expected directory structure and file names.
+    Check if the local Common Voice dataset is Spontaneous (SPS) or Scripted (SCS),
+    based on the expected directory structure and file names.
     - SPS: contains `audios/` directory and `ss-corpus*.tsv` files
-    - SCS: contains `clips/` directory and `train.tsv`, `dev.tsv`, `test.tsv`
-           files
+    - SCS: contains `clips/` directory and `train.tsv`, `dev.tsv`, `test.tsv` files
     """
     entries = list(cv_data_dir.iterdir())
     dir_names = {p.name for p in entries if p.is_dir()}
     file_names = {p.name for p in entries if p.is_file()}
 
-    if ("audios" in dir_names 
-        and any(name.startswith("ss-corpus") and name.endswith(".tsv")
-                for name in file_names)):
+    if "audios" in dir_names and any(
+        name.startswith("ss-corpus") and name.endswith(".tsv") for name in file_names
+    ):
         return True
-    elif ("clips" in dir_names 
-          and {"train.tsv", "dev.tsv", "test.tsv"}.issubset(file_names)):
+    elif "clips" in dir_names and {"train.tsv", "dev.tsv", "test.tsv"}.issubset(
+        file_names
+    ):
         return False
     else:
-        raise ValueError("Unexpected dataset format. Could not determine if "
-                         "local Common Voice is SPS or SCS.")
+        raise ValueError(
+            "Unexpected dataset format. Could not determine if local Common Voice is SPS or SCS."
+        )
 
 
 def _load_local_common_voice(cv_data_dir: str) -> DatasetDict:
@@ -225,14 +216,16 @@ def _load_local_common_voice(cv_data_dir: str) -> DatasetDict:
     """
     cv_data_dir = Path(cv_data_dir)
 
-    is_spontaneous_speech = _check_if_local_common_voice_is_spontaneous(
-        cv_data_dir
-    )
+    is_spontaneous_speech = _check_if_local_common_voice_is_spontaneous(cv_data_dir)
 
     if is_spontaneous_speech:
         dataset_df = None
         for file in cv_data_dir.iterdir():
-            if file.is_file() and file.name.startswith("ss-corpus") and file.name.endswith(".tsv"):
+            if (
+                file.is_file()
+                and file.name.startswith("ss-corpus")
+                and file.name.endswith(".tsv")
+            ):
                 dataset_df = pd.read_csv(file, sep="\t")
                 break
         if dataset_df is None:
@@ -300,6 +293,7 @@ def _build_cv_dataset_from_df(
         }
     )
 
+
 def _join_audio_path(audio_dir: Path, rel_path: str) -> str:
     """
     Safely join base audio directory with the relative file path.
@@ -309,6 +303,7 @@ def _join_audio_path(audio_dir: Path, rel_path: str) -> str:
     if os.path.isabs(p):
         return p
     return str((audio_dir / p).resolve())
+
 
 def _replace_rel_path_with_abs_path(
     df: pd.DataFrame, audio_dir: str | Path, audio_clip_column: str
@@ -396,8 +391,7 @@ def load_and_proc_hf_fleurs(
     )
     dataset = dataset.select_columns(["audio", "sentence"])
 
-    save_proc_dataset_path = _get_hf_proc_dataset_path(
-        fleurs_dataset_id, language_id)
+    save_proc_dataset_path = _get_hf_proc_dataset_path(fleurs_dataset_id, language_id)
     logger.info("Processing dataset...")
     dataset = process_dataset_for_whisper(
         dataset=dataset,
@@ -429,9 +423,10 @@ def process_dataset_for_whisper(
     processor: WhisperProcessor,
     batch_size: int,
     proc_dataset_path: str | Path,
+    num_proc: int | None = 1,
 ) -> DatasetDict | Dataset:
     """
-    Process dataset to the expected format by a Whisper model and then save it 
+    Process dataset to the expected format by a Whisper model and then save it
     locally for future use.
     """
     # Create a new column that consists of the resampled audio samples in the right sample rate for whisper
@@ -447,20 +442,20 @@ def process_dataset_for_whisper(
         else None,
         batched=True,
         batch_size=batch_size,
-        num_proc=1,
+        num_proc=num_proc,
     )
 
     dataset = dataset.filter(
         _is_audio_in_length_range,
         input_columns=["input_length"],
         fn_kwargs={"max_input_length": 30.0},
-        num_proc=1,
+        num_proc=num_proc,
     )
     dataset = dataset.filter(
         _are_labels_in_length_range,
         input_columns=["labels"],
         fn_kwargs={"max_label_length": 448},
-        num_proc=1,
+        num_proc=num_proc,
     )
     proc_dataset_path = Path(proc_dataset_path)
     Path.mkdir(proc_dataset_path, parents=True, exist_ok=True)
@@ -495,18 +490,15 @@ def get_mms_dataset_prep_fn(processor):
     def prepare_dataset(batch):
         audio = batch["audio"]
         batch["input_values"] = processor(
-            audio["array"], 
-            sampling_rate=audio["sampling_rate"]
+            audio["array"], sampling_rate=audio["sampling_rate"]
         ).input_values[0]
         batch["input_length"] = len(batch["input_values"])
 
-        #
         # Here, we could add some text cleaning/preprocessing, but currently
         # the assumption is that this will be done prior to fine-tuning.
-        #
         batch["labels"] = processor(text=batch["sentence"]).input_ids
         return batch
-        
+
     return prepare_dataset
 
 
@@ -532,11 +524,9 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         )
 
         # get the tokenized label sequences
-        label_features = [{"input_ids": feature["labels"]}
-                          for feature in features]
+        label_features = [{"input_ids": feature["labels"]} for feature in features]
         # pad the labels to max length
-        labels_batch = self.processor.tokenizer.pad(
-            label_features, return_tensors="pt")
+        labels_batch = self.processor.tokenizer.pad(label_features, return_tensors="pt")
 
         # replace padding with -100 to ignore loss correctly
         labels = labels_batch["input_ids"].masked_fill(
@@ -558,17 +548,17 @@ class DataCollatorCTCWithPadding:
     """
     Data collator that will dynamically pad the inputs received.
     """
+
     processor: Wav2Vec2Processor
     padding: Union[bool, str] = True
 
     def __call__(
-            self, 
-            features: List[Dict[str, Union[List[int], torch.Tensor]]]
-            ) -> Dict[str, torch.Tensor]:
-        input_features = [{"input_values": feature["input_values"]} 
-                          for feature in features]     
-        label_features = [{"input_ids": feature["labels"]} 
-                          for feature in features]
+        self, features: List[Dict[str, Union[List[int], torch.Tensor]]]
+    ) -> Dict[str, torch.Tensor]:
+        input_features = [
+            {"input_values": feature["input_values"]} for feature in features
+        ]
+        label_features = [{"input_ids": feature["labels"]} for feature in features]
         batch = self.processor.pad(
             input_features,
             padding=self.padding,
@@ -582,8 +572,7 @@ class DataCollatorCTCWithPadding:
 
         # replace padding with -100 to ignore loss correctly
         labels = labels_batch["input_ids"].masked_fill(
-            labels_batch.attention_mask.ne(1), 
-            -100
+            labels_batch.attention_mask.ne(1), -100
         )
         batch["labels"] = labels
         return batch
@@ -591,4 +580,5 @@ class DataCollatorCTCWithPadding:
 
 class InvalidCommonVoiceDatasetError(ValueError):
     """Raised when an MDC Common Voice dataset cannot be classified as SPS or SCS."""
+
     pass

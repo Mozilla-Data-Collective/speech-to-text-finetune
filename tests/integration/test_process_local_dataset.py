@@ -41,6 +41,7 @@ def test_load_proc_dataset_after_init_processing(
         processor=mock_whisper_processor,
         batch_size=1,
         proc_dataset_path=proc_dataset_dir,
+        num_proc=None,
     )
     # Now try again to find and load the processed version
     dataset = try_find_processed_version(dataset_id=dataset_id)
