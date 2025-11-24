@@ -125,9 +125,9 @@ def load_dataset_from_dataset_id(dataset_id: str) -> Tuple[DatasetDict, Path]:
 
     raise ValueError(
         f"There was an error trying to load the dataset: {dataset_id}. "
-        f"If the dataset id is a valid MDC identifier, please check that"
-        f"- you have agreed to the terms & conditions of the specific dataset."
-        f"- you have set your MDC_API_KEY environment variable."
+        f"If the dataset id is a valid MDC identifier, please check that:\n"
+        f"- you have agreed to the terms & conditions of the specific dataset.\n"
+        f"- you have set your MDC_API_KEY environment variable.\n"
         f"If the dataset id is a local path, please check that you are using the absolute path and it exists."
     )
 
