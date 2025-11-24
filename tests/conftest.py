@@ -26,6 +26,11 @@ def example_config_whisper_path():
 
 
 @pytest.fixture(scope="session")
+def example_config_mms_path():
+    return str(Path(__file__).parent.parent / "tests/e2e/config_mms.yaml")
+
+
+@pytest.fixture(scope="session")
 def custom_data_path():
     return str(Path(__file__).parent.parent / "example_data/custom")
 
