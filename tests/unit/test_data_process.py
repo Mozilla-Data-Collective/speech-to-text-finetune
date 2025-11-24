@@ -5,7 +5,7 @@ from speech_to_text_finetune.data_process import (
     load_dataset_from_dataset_id,
     load_subset_of_dataset,
     try_find_processed_version,
-    process_dataset,
+    process_dataset_for_whisper,
 )
 
 
@@ -81,7 +81,7 @@ def mock_dataset():
 def test_remove_long_audio_and_transcription_samples(
     mock_dataset, mock_whisper_processor, tmp_path
 ):
-    processed_dataset = process_dataset(
+    processed_dataset = process_dataset_for_whisper(
         dataset=mock_dataset,
         processor=mock_whisper_processor,
         batch_size=1,

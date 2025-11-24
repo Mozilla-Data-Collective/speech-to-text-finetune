@@ -6,7 +6,7 @@ from transformers import WhisperProcessor
 
 from speech_to_text_finetune.config import PROC_DATASET_DIR
 from speech_to_text_finetune.data_process import (
-    process_dataset,
+    process_dataset_for_whisper,
     try_find_processed_version,
     load_dataset_from_dataset_id,
 )
@@ -36,7 +36,7 @@ def test_load_proc_dataset_after_init_processing(
 
     # Load, process the dataset and save it under proc_dataset_dir
     dataset, proc_dataset_dir = load_dataset_from_dataset_id(dataset_id=dataset_id)
-    process_dataset(
+    process_dataset_for_whisper(
         dataset=dataset,
         processor=mock_whisper_processor,
         batch_size=1,
@@ -58,7 +58,7 @@ def test_process_local_dataset(custom_dataset_half_split, tmp_path):
         model_id, language="English", task="transcribe"
     )
 
-    result = process_dataset(
+    result = process_dataset_for_whisper(
         custom_dataset_half_split,
         processor=processor,
         batch_size=2,

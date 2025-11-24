@@ -20,7 +20,7 @@ from speech_to_text_finetune.data_process import (
     DataCollatorSpeechSeq2SeqWithPadding,
     load_dataset_from_dataset_id,
     try_find_processed_version,
-    process_dataset_for_whisper as process_dataset,
+    process_dataset_for_whisper,
     load_subset_of_dataset,
 )
 from speech_to_text_finetune.utils import (
@@ -122,7 +122,7 @@ def run_finetuning(
         dataset["train"] = load_subset_of_dataset(dataset["train"], cfg.n_train_samples)
         dataset["test"] = load_subset_of_dataset(dataset["test"], cfg.n_test_samples)
         logger.info("Processing dataset...")
-        dataset = process_dataset(
+        dataset = process_dataset_for_whisper(
             dataset=dataset,
             processor=processor,
             batch_size=cfg.training_hp.per_device_train_batch_size,
