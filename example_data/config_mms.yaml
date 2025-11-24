@@ -1,6 +1,6 @@
 model_id: facebook/mms-1b-all
-dataset_id: cmflnuzz3l9oqw5m1ezpzl062
-language: Betawi
+dataset_id: cmflnuzw526xwbjiarvw49ndp
+language: Greek
 repo_name: default
 n_train_samples: -1
 n_test_samples: -1
