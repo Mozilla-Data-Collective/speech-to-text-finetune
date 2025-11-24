@@ -2,13 +2,13 @@ import shutil
 from pathlib import Path
 
 from speech_to_text_finetune.config import load_config
-from speech_to_text_finetune.finetune_whisper import run_finetuning
+from speech_to_text_finetune.finetune_mms_adapter import run_finetuning
 
 
-def test_finetune_whisper_local(example_config_whisper_path):
-    base_results, eval_results = run_finetuning(config_path=example_config_whisper_path)
+def test_finetune_mms_local(example_config_mms_path):
+    base_results, eval_results = run_finetuning(config_path=example_config_mms_path)
 
-    cfg = load_config(example_config_whisper_path)
+    cfg = load_config(example_config_mms_path)
     expected_dir_path = Path(f"artifacts/{cfg.repo_name}")
     assert expected_dir_path.exists()
 

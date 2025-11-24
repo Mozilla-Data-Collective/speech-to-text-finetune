@@ -20,7 +20,7 @@ from speech_to_text_finetune.data_process import (
     DataCollatorSpeechSeq2SeqWithPadding,
     load_dataset_from_dataset_id,
     try_find_processed_version,
-    process_dataset,
+    process_dataset_for_whisper,
     load_subset_of_dataset,
 )
 from speech_to_text_finetune.utils import (
@@ -31,7 +31,7 @@ from speech_to_text_finetune.utils import (
 
 
 def run_finetuning(
-    config_path: str = "config.yaml",
+    config_path: str = "config_whisper.yaml",
 ) -> Tuple[Dict, Dict]:
     """
     Complete pipeline for preprocessing the Common Voice dataset and then finetuning a Whisper model on it.
@@ -122,7 +122,7 @@ def run_finetuning(
         dataset["train"] = load_subset_of_dataset(dataset["train"], cfg.n_train_samples)
         dataset["test"] = load_subset_of_dataset(dataset["test"], cfg.n_test_samples)
         logger.info("Processing dataset...")
-        dataset = process_dataset(
+        dataset = process_dataset_for_whisper(
             dataset=dataset,
             processor=processor,
             batch_size=cfg.training_hp.per_device_train_batch_size,
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     argparser.add_argument(
         "--path_to_config",
         "-c",
-        default="example_data/config.yaml",
+        default="example_data/config_whisper.yaml",
         help="Path to the experiment config yaml file",
     )
     args = argparser.parse_args()

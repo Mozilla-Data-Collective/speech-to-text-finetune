@@ -21,8 +21,13 @@ def chdir_repo_root():
 
 
 @pytest.fixture(scope="session")
-def example_config_path():
-    return str(Path(__file__).parent.parent / "tests/e2e/config.yaml")
+def example_config_whisper_path():
+    return str(Path(__file__).parent.parent / "tests/e2e/config_whisper.yaml")
+
+
+@pytest.fixture(scope="session")
+def example_config_mms_path():
+    return str(Path(__file__).parent.parent / "tests/e2e/config_mms.yaml")
 
 
 @pytest.fixture(scope="session")
