@@ -1,0 +1,27 @@
+model_id: facebook/mms-1b-all
+dataset_id: cmflnuzw526xwbjiarvw49ndp
+language: Greek
+repo_name: default
+n_train_samples: -1
+n_test_samples: -1
+
+training_hp:
+    push_to_hub: False
+    hub_private_repo: True
+    max_steps: 50
+    per_device_train_batch_size: 32
+    gradient_accumulation_steps: 4
+    learning_rate: 1e-3
+    warmup_steps: 50
+    gradient_checkpointing: True
+    fp16: True  # If a GPU is available, set it to True for faster training & decreased memory usage -> bigger batches
+    eval_strategy: steps
+    per_device_eval_batch_size: 8
+    predict_with_generate: True
+    generation_max_length: 225
+    save_steps: 5
+    logging_steps: 5
+    load_best_model_at_end: True
+    save_total_limit: 1
+    metric_for_best_model: wer
+    greater_is_better: False

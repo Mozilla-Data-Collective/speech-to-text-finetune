@@ -9,7 +9,7 @@ from datacollective import DataCollective
 from datasets import Audio, Dataset, DatasetDict, load_dataset, load_from_disk
 from dotenv import load_dotenv
 from loguru import logger
-from transformers import WhisperProcessor
+from transformers import WhisperProcessor, Wav2Vec2Processor
 
 from speech_to_text_finetune.config import PROC_DATASET_DIR
 
@@ -125,9 +125,9 @@ def load_dataset_from_dataset_id(dataset_id: str) -> Tuple[DatasetDict, Path]:
 
     raise ValueError(
         f"There was an error trying to load the dataset: {dataset_id}. "
-        f"If the dataset id is a valid MDC identifier, please check that"
-        f"- you have agreed to the terms & conditions of the specific dataset."
-        f"- you have set your MDC_API_KEY environment variable."
+        f"If the dataset id is a valid MDC identifier, please check that:\n"
+        f"- you have agreed to the terms & conditions of the specific dataset.\n"
+        f"- you have set your MDC_API_KEY environment variable.\n"
         f"If the dataset id is a local path, please check that you are using the absolute path and it exists."
     )
 
@@ -393,7 +393,7 @@ def load_and_proc_hf_fleurs(
 
     save_proc_dataset_path = _get_hf_proc_dataset_path(fleurs_dataset_id, language_id)
     logger.info("Processing dataset...")
-    dataset = process_dataset(
+    dataset = process_dataset_for_whisper(
         dataset=dataset,
         processor=processor,
         batch_size=eval_batch_size,
@@ -418,7 +418,7 @@ def _are_labels_in_length_range(labels: List[int], max_label_length: int = 448) 
     return len(labels) < max_label_length
 
 
-def process_dataset(
+def process_dataset_for_whisper(
     dataset: DatasetDict | Dataset,
     processor: WhisperProcessor,
     batch_size: int,
@@ -426,7 +426,8 @@ def process_dataset(
     num_proc: int | None = 1,
 ) -> DatasetDict | Dataset:
     """
-    Process dataset to the expected format by a Whisper model and then save it locally for future use.
+    Process dataset to the expected format by a Whisper model and then save it
+    locally for future use.
     """
     # Create a new column that consists of the resampled audio samples in the right sample rate for whisper
     dataset = dataset.cast_column(
@@ -485,6 +486,22 @@ def _process_inputs_and_labels_for_whisper(
     return batch
 
 
+def get_mms_dataset_prep_fn(processor):
+    def prepare_dataset(batch):
+        audio = batch["audio"]
+        batch["input_values"] = processor(
+            audio["array"], sampling_rate=audio["sampling_rate"]
+        ).input_values[0]
+        batch["input_length"] = len(batch["input_values"])
+
+        # Here, we could add some text cleaning/preprocessing, but currently
+        # the assumption is that this will be done prior to fine-tuning.
+        batch["labels"] = processor(text=batch["sentence"]).input_ids
+        return batch
+
+    return prepare_dataset
+
+
 @dataclass
 class DataCollatorSpeechSeq2SeqWithPadding:
     """
@@ -523,6 +540,41 @@ class DataCollatorSpeechSeq2SeqWithPadding:
 
         batch["labels"] = labels
 
+        return batch
+
+
+@dataclass
+class DataCollatorCTCWithPadding:
+    """
+    Data collator that will dynamically pad the inputs received.
+    """
+
+    processor: Wav2Vec2Processor
+    padding: Union[bool, str] = True
+
+    def __call__(
+        self, features: List[Dict[str, Union[List[int], torch.Tensor]]]
+    ) -> Dict[str, torch.Tensor]:
+        input_features = [
+            {"input_values": feature["input_values"]} for feature in features
+        ]
+        label_features = [{"input_ids": feature["labels"]} for feature in features]
+        batch = self.processor.pad(
+            input_features,
+            padding=self.padding,
+            return_tensors="pt",
+        )
+        labels_batch = self.processor.pad(
+            labels=label_features,
+            padding=self.padding,
+            return_tensors="pt",
+        )
+
+        # replace padding with -100 to ignore loss correctly
+        labels = labels_batch["input_ids"].masked_fill(
+            labels_batch.attention_mask.ne(1), -100
+        )
+        batch["labels"] = labels
         return batch
 
 

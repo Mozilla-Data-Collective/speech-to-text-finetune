@@ -39,6 +39,6 @@ jobs:
       - name: Run Integration Tests
         run: pytest -v tests/integration
 
-      - name: Run E2E tests
+      - name: Run E2E tests for whisper (MMS is too big)
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        run: pytest -v tests/e2e
+        run: pytest -v tests/e2e/test_finetune_whisper.py

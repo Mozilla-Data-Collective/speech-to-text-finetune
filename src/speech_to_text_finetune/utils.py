@@ -1,6 +1,9 @@
+import json
+import numpy as np
 from typing import Dict
 
 from evaluate import EvaluationModule
+from iso639 import Language, LanguageNotFoundError
 from huggingface_hub import (
     ModelCard,
     HfApi,
@@ -40,6 +43,8 @@ def compute_wer_cer_metrics(
     """
 
     pred_ids = pred.predictions
+    if len(pred_ids.shape) == 3:
+        pred_ids = np.argmax(pred_ids, axis=-1)
     label_ids = pred.label_ids
 
     # replace -100 with the pad_token_id
@@ -56,7 +61,9 @@ def compute_wer_cer_metrics(
     # compute normalised WER
     pred_str_norm = [normalizer(pred) for pred in pred_str]
     label_str_norm = [normalizer(label) for label in label_str]
-    # filtering step to only evaluate the samples that correspond to non-zero references:
+
+    # filtering step to only evaluate the samples that correspond to non-zero
+    # references:
     pred_str_norm = [
         pred_str_norm[i]
         for i in range(len(pred_str_norm))
@@ -72,6 +79,18 @@ def compute_wer_cer_metrics(
     cer = 100 * cer.compute(predictions=pred_str_norm, references=label_str_norm)
 
     return {"wer_ortho": wer_ortho, "wer": wer, "cer_ortho": cer_ortho, "cer": cer}
+
+
+def get_language_code_from_name(language_name, logger):
+    try:
+        code = Language.from_name(language_name).part3
+    except LanguageNotFoundError:
+        code = language_name.lower().replace(" ", "-")
+        logger.warning(
+            f"Could not find an ISO 639-3 code associated with language "
+            f"name {language_name}. Using {code} as the identifier."
+        )
+    return code
 
 
 def get_hf_username() -> str:
@@ -158,3 +177,22 @@ def update_hf_model_card_with_fleurs_results(
 - Loss: {round(ft_eval_results["eval_loss"], 3)}
 """
     model_card.push_to_hub(model_repo_id)
+
+
+def make_vocab(train_data, lang_code, path_to_output_dir):
+    """
+    Builds vocabulary from train and dev sets (maybe its better to exclude
+    dev vocab here but :shrug: we will not have the test vocab when getting
+    eval numbers on test).
+    """
+    chars = set([ch for sent in train_data["sentence"] for ch in set(sent)])
+    vocab_dict = {v: k for k, v in enumerate(sorted(chars))}
+    vocab_dict["|"] = vocab_dict[" "]
+    del vocab_dict[" "]
+
+    vocab_dict["[UNK]"] = len(vocab_dict)
+    vocab_dict["[PAD]"] = len(vocab_dict)
+
+    new_vocab_dict = {lang_code: vocab_dict}
+    with open(f"{path_to_output_dir}/vocab.json", "w") as vocab_file:
+        json.dump(new_vocab_dict, vocab_file)
