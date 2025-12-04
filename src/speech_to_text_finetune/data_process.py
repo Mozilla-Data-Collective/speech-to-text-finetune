@@ -382,7 +382,7 @@ def load_and_proc_hf_fleurs(
         return proc_dataset
 
     dataset = load_dataset(
-        fleurs_dataset_id, language_id, trust_remote_code=True, split="test"
+        fleurs_dataset_id, language_id, split="test", revision="refs/convert/parquet"
     )
     dataset = load_subset_of_dataset(dataset, n_test_samples)
 
