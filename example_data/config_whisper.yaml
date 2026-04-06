@@ -4,6 +4,8 @@ language: None  # Set to None for multilingual training or if your language is n
 repo_name: default
 n_train_samples: -1
 n_test_samples: -1
+download_directory: ""  # Optional: where MDC datasets should be downloaded locally before processing
+test_size: null  # Optional: if you want to split the dataset into train/test sets yourself, specify the test set size here (e.g., 0.2 for 20% test data)
 
 training_hp:
     push_to_hub: False
