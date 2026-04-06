@@ -6,11 +6,11 @@ build-backend = "setuptools.build_meta"
 name = "speech-to-text-finetune"
 readme = "README.md"
 license = {text = "Apache-2.0"}
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dynamic = ["version"]
 dependencies = [
   "accelerate>=1.11.0",
-  "datacollective>=0.0.34",
+  "datacollective",
   "datasets[audio]>=4.4.0",
   "evaluate>=0.4.6",
   "gradio>=5.49.1",
@@ -23,7 +23,17 @@ dependencies = [
   "transformers>=4.57.1",
 ]
 
+
+[tool.uv.sources]
+datacollective = { git = "https://github.com/Mozilla-Data-Collective/datacollective-python", rev = "8ef57dc30475dd14761eea6c6890d5989e49f7dc" }
+
 [project.optional-dependencies]
+demo = [
+  "ipykernel>=7.2.0",
+  "scikit-learn>=1.5.0",
+  "ydata-profiling>=4.18.1",
+]
+
 docs = [
   "mkdocs",
   "mkdocs-material",
