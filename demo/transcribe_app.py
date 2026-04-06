@@ -1,6 +1,5 @@
 import os
 import gradio as gr
-import spaces
 from huggingface_hub import get_collection, HfApi
 from transformers import pipeline, Pipeline
 
@@ -31,16 +30,25 @@ def get_dropdown_model_ids():
 
 
 def _load_local_model(model_dir: str) -> Pipeline | str:
-    from transformers import WhisperProcessor, WhisperForConditionalGeneration
+    from transformers import (
+        WhisperProcessor,
+        WhisperForConditionalGeneration,
+        WhisperTokenizer,
+        WhisperFeatureExtractor,
+    )
 
+    tokenizer = WhisperTokenizer.from_pretrained(model_dir)
     processor = WhisperProcessor.from_pretrained(model_dir)
     model = WhisperForConditionalGeneration.from_pretrained(model_dir)
+    feature_extractor = WhisperFeatureExtractor.from_pretrained(model_dir)
 
     try:
         return pipeline(
             task="automatic-speech-recognition",
             model=model,
+            tokenizer=tokenizer,
             processor=processor,
+            feature_extractor=feature_extractor,
             chunk_length_s=30,  # max input duration for whisper
         )
     except Exception as e:
@@ -80,7 +88,6 @@ def format_timestamp(
     )
 
 
-@spaces.GPU(duration=30)
 def transcribe(
     dropdown_model_id: str,
     hf_model_id: str,
