@@ -1,5 +1,5 @@
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 def load_config(config_path: str):
@@ -46,6 +46,8 @@ class Config(BaseModel):
         repo_name: used both for local dir and HF, "default" will create a name based on the model and language id
         n_train_samples: explicitly set how many samples to train+validate on. If -1, use all train+val data available
         n_test_samples: explicitly set how many samples to evaluate on. If -1, use all eval data available
+        test_size: optional train/test split size for tabular ASR datasets that do not already define both splits.
+            Follows sklearn.model_selection.train_test_split semantics.
         training_hp: store selective hyperparameter values from Seq2SeqTrainingArguments
     """
 
@@ -55,7 +57,25 @@ class Config(BaseModel):
     repo_name: str
     n_train_samples: int
     n_test_samples: int
+    test_size: float | int | None = None
     training_hp: TrainingConfig
+
+    @field_validator("test_size")
+    @classmethod
+    def validate_test_size(cls, value: float | int | None) -> float | int | None:
+        if value is None:
+            return value
+        if isinstance(value, bool):
+            raise TypeError("test_size must be a float, int, or null.")
+        if isinstance(value, float):
+            if not 0.0 < value < 1.0:
+                raise ValueError("Float test_size must be between 0.0 and 1.0.")
+            return value
+        if isinstance(value, int):
+            if value <= 0:
+                raise ValueError("Integer test_size must be greater than 0.")
+            return value
+        raise TypeError("test_size must be a float, int, or null.")
 
 
 PROC_DATASET_DIR = "processed_version"

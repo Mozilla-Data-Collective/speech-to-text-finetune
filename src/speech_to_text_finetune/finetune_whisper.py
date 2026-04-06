@@ -106,7 +106,9 @@ def run_finetuning(
     )
 
     if proc_dataset := try_find_processed_version(
-        dataset_id=cfg.dataset_id, language_id=language_id
+        dataset_id=cfg.dataset_id,
+        language_id=language_id,
+        test_size=cfg.test_size,
     ):
         logger.info(
             f"Loading processed dataset version of {cfg.dataset_id} and skipping processing."
@@ -118,6 +120,7 @@ def run_finetuning(
         logger.info(f"Loading {cfg.dataset_id}.")
         dataset, save_proc_dataset_dir = load_dataset_from_dataset_id(
             dataset_id=cfg.dataset_id,
+            test_size=cfg.test_size,
         )
         dataset["train"] = load_subset_of_dataset(dataset["train"], cfg.n_train_samples)
         dataset["test"] = load_subset_of_dataset(dataset["test"], cfg.n_test_samples)

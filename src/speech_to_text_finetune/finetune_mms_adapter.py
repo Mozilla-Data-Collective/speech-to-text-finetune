@@ -119,7 +119,10 @@ def run_finetuning(
     # Since the MMS workflow doesn't require a ton of preprocessing, we don't
     # worry about saving the "processed" dataset (hence the _ for the processed_dataset_path).
     # We do need to make sure the sampling rate is 16k though
-    dataset, _ = load_dataset_from_dataset_id(dataset_id=cfg.dataset_id)
+    dataset, _ = load_dataset_from_dataset_id(
+        dataset_id=cfg.dataset_id,
+        test_size=cfg.test_size,
+    )
 
     dataset["train"] = load_subset_of_dataset(dataset["train"], cfg.n_train_samples)
     dataset["train"] = dataset["train"].cast_column("audio", Audio(sampling_rate=16000))
