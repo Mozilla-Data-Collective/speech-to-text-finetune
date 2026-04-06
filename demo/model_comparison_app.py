@@ -33,9 +33,13 @@ def transcribe_sequentially(
     local_model_2: str,
     audio: gr.Audio,
 ) -> Tuple[str, str]:
-    if text_1 := transcribe(dropdown_model, user_model, local_model, audio):
+    if text_1 := transcribe(
+        dropdown_model, user_model, local_model, audio, show_timestamps=False
+    ):
         yield text_1, ""
-    if text_2 := transcribe(dropdown_model_2, user_model_2, local_model_2, audio):
+    if text_2 := transcribe(
+        dropdown_model_2, user_model_2, local_model_2, audio, show_timestamps=False
+    ):
         yield text_1, text_2
 
 
