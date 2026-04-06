@@ -121,6 +121,7 @@ def run_finetuning(
         dataset, save_proc_dataset_dir = load_dataset_from_dataset_id(
             dataset_id=cfg.dataset_id,
             test_size=cfg.test_size,
+            download_directory=cfg.download_directory,
         )
         dataset["train"] = load_subset_of_dataset(dataset["train"], cfg.n_train_samples)
         dataset["test"] = load_subset_of_dataset(dataset["test"], cfg.n_test_samples)

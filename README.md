@@ -108,6 +108,7 @@ You can either load Common Voice via the Mozilla Data Collective Python SDK dire
    dataset_id: <mdc_dataset_id>
    language: English
    repo_name: default
+   download_directory: /path/to/mdc-downloads  # Optional
 
    training_hp:
      push_to_hub: False
@@ -115,6 +116,8 @@ You can either load Common Voice via the Mozilla Data Collective Python SDK dire
      ...
    ```
 4. Finetune: `python src/speech_to_text_finetune/finetune_whisper.py`
+
+   If `download_directory` is omitted or left as `""`, the MDC SDK keeps using its existing default behavior.
 
 > [!NOTE]
 > To enable downloads via Python API, you must accept the terms and conditions of the dataset you will be using on the MDC platform.
@@ -135,6 +138,7 @@ For a notebook-based walkthrough of the full MDC flow - GPU check, API key entry
    dataset_id: path/to/common_voice_data/language_id
    language: English
    repo_name: default
+   download_directory: ""  # Ignored for local datasets
 
    training_hp:
      push_to_hub: False

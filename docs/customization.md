@@ -77,13 +77,14 @@ Optionally, you can also provide a `split` column with values like `train`, `dev
 
 ### Step 3: Update your config file
 
-Point `dataset_id` to either the dataset directory or directly to the dataset file. If your dataset does **not** already define a `split` column with both train and test rows, you can control the generated test split with `test_size`.
+Point `dataset_id` to either the dataset directory or directly to the dataset file. If your dataset does **not** already define a `split` column with both train and test rows, you can control the generated test split with `test_size`. If you are using an MDC dataset id instead of a local path, you can also set `download_directory` to choose where the raw dataset should be downloaded.
 
 ```
 model_id: openai/whisper-tiny
 dataset_id: /home/user/datasets/my_dataset
 language: English
 repo_name: default
+download_directory: ""  # Only used for MDC dataset ids
 n_train_samples: -1
 n_test_samples: -1
 test_size: 0.2

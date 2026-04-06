@@ -141,14 +141,18 @@ def test_load_dataset_from_dataset_id_mdc_generic_asr(
     )
 
     monkeypatch.setenv("MDC_API_KEY", "dummy-key")
-    monkeypatch.setattr(
-        data_process,
-        "_load_mdc_dataframe",
-        lambda dataset_id: dataset_df,
-    )
+    captured_kwargs = {}
+
+    def mock_load_dataset(dataset_id, download_directory=""):
+        captured_kwargs["dataset_id"] = dataset_id
+        captured_kwargs["download_directory"] = download_directory
+        return dataset_df
+
+    monkeypatch.setattr(data_process, "load_dataset", mock_load_dataset)
 
     dataset, proc_dataset_path = load_dataset_from_dataset_id(
-        dataset_id="mozilla/common-voice-like-mdc"
+        dataset_id="mozilla/common-voice-like-mdc",
+        download_directory="/tmp/mdc-downloads",
     )
 
     _assert_proper_dataset(dataset)
@@ -157,6 +161,10 @@ def test_load_dataset_from_dataset_id_mdc_generic_asr(
     assert dataset["train"][0]["sentence"] == "mdc train"
     assert dataset["test"][0]["sentence"] == "mdc test"
     assert dataset["train"][0]["audio"] == str(source_audio_file.resolve())
+    assert captured_kwargs == {
+        "dataset_id": "mozilla/common-voice-like-mdc",
+        "download_directory": "/tmp/mdc-downloads",
+    }
     assert proc_dataset_path == Path(
         "artifacts/mozilla_common-voice-like-mdc/processed_version"
     )

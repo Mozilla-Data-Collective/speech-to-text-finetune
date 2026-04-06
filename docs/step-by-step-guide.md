@@ -60,6 +60,7 @@ Initially, you can test the quality of the Speech-to-Text models available in Hu
    dataset_id: example_data/custom
    language: English  # Set to None for multilingual training or if your language is not supported by Whisper
    repo_name: default
+   download_directory: ""  # Ignored for local datasets
 
    training_hp:
      push_to_hub: False
@@ -90,6 +91,7 @@ Pick one of the following:
      dataset_id: <mdc_dataset_id>
      language: English
      repo_name: default
+      download_directory: /path/to/mdc-downloads  # Optional
 
      training_hp:
        push_to_hub: False
@@ -109,6 +111,7 @@ Pick one of the following:
      dataset_id: path/to/common_voice_data/language_id
      language: English
      repo_name: default
+      download_directory: ""  # Ignored for local datasets
 
      training_hp:
        push_to_hub: False

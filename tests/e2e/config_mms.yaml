@@ -4,6 +4,7 @@ language: English
 repo_name: e2e_test
 n_train_samples: -1
 n_test_samples: -1
+download_directory: ""
 test_size: null
 
 training_hp:

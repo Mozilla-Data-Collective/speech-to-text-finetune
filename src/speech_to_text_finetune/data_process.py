@@ -98,7 +98,9 @@ def _get_proc_dataset_dir_name(test_size: float | int | None = None) -> str:
 
 
 def load_dataset_from_dataset_id(
-    dataset_id: str, test_size: float | int | None = None
+    dataset_id: str,
+    test_size: float | int | None = None,
+    download_directory: str = "",
 ) -> Tuple[DatasetDict, Path]:
     """
     This function loads a dataset, based on the dataset_id and the content of its directory (if it is a local path).
@@ -116,6 +118,8 @@ def load_dataset_from_dataset_id(
             don't already contain a usable train/test split.
             If not provided, defaults to None, which means that the default test size of 0.2
             will be used when creating a train/test split.
+        download_directory: Local directory used by the MDC SDK when downloading
+            datasets referenced by MDC dataset IDs.
 
     Returns:
         DatasetDict: A processed dataset ready for training with train/test splits
@@ -126,7 +130,11 @@ def load_dataset_from_dataset_id(
     """
 
     try:
-        dataset = _load_mdc_dataset(dataset_id, test_size=test_size)
+        dataset = _load_mdc_dataset(
+            dataset_id,
+            test_size=test_size,
+            download_directory=download_directory,
+        )
         return dataset, _get_mdc_proc_dataset_path(dataset_id, test_size=test_size)
     except Exception as e:
         # MDC load failed (dataset not present on MDC or transient MDC error) — try next loaders.
@@ -158,7 +166,9 @@ def load_dataset_from_dataset_id(
 
 
 def _load_mdc_dataset(
-    dataset_id: str, test_size: float | int | None = None
+    dataset_id: str,
+    test_size: float | int | None = None,
+    download_directory: str = "",
 ) -> DatasetDict:
     """
     Load a dataset from MDC and normalize it into the train/test format
@@ -169,6 +179,7 @@ def _load_mdc_dataset(
 
     Args:
         dataset_id: dataset id from the Mozilla Data Collective
+        download_directory: local directory where the MDC SDK should download the raw dataset
 
     Returns:
         DatasetDict: HF Dataset dictionary that consists of two distinct Datasets
@@ -181,7 +192,7 @@ def _load_mdc_dataset(
             "Please set it to access Mozilla Data Collective datasets."
         )
 
-    dataset_df = load_dataset(dataset_id)
+    dataset_df = load_dataset(dataset_id, download_directory=download_directory)
     if not _is_valid_asr_dataset(dataset_df):
         raise ValueError(
             "Unsupported MDC dataset format. Expected an ASR dataset with "
