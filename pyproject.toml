@@ -27,7 +27,7 @@ dependencies = [
 [tool.uv.sources]
 datacollective = { git = "https://github.com/Mozilla-Data-Collective/datacollective-python", rev = "8ef57dc30475dd14761eea6c6890d5989e49f7dc" }
 
-[project.optional-dependencies]
+[dependency-groups]
 demo = [
   "ipykernel>=7.2.0",
   "scikit-learn>=1.5.0",
