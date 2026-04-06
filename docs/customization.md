@@ -46,6 +46,7 @@ If your dataset is a local `.csv`, `.tsv`, or `.parquet` file (or a directory co
 
 - keep only the audio path and transcription columns
 - ignore extra metadata columns such as `topic`, `speaker_id`, or `paragraph_id`
+- expect `audio_path` to already contain an absolute path to the audio file
 - use a `split` column if it already exists
 - otherwise create a train/test split using `sklearn.model_selection.train_test_split`
 
@@ -66,10 +67,10 @@ and that the .csv file has the following format:
 ```
 csv my_dataset/dataset.csv
 audio_path,transcription,topic,speaker_id
-clips/example_1.mp3,"This is an example",culture,speaker_1
-clips/example_2.mp3,"This is another example",culture,speaker_2
+/home/user/datasets/my_dataset/clips/example_1.mp3,"This is an example",culture,speaker_1
+/home/user/datasets/my_dataset/clips/example_2.mp3,"This is another example",culture,speaker_2
 ...
-clips/example_n.mp3,"This is yet another example",culture,speaker_n
+/home/user/datasets/my_dataset/clips/example_n.mp3,"This is yet another example",culture,speaker_n
 ```
 
 Optionally, you can also provide a `split` column with values like `train`, `dev`, `validation`, `test`, or `eval`. If both train and test are already defined, that split will be preserved.

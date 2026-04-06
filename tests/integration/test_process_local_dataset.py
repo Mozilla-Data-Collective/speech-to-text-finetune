@@ -19,7 +19,12 @@ def proc_custom_data_path(custom_data_path):
 
 @pytest.mark.parametrize(
     "dataset_id",
-    ["local_common_voice_data_path", "custom_data_path"],
+    [
+        "local_common_voice_data_path",
+        "custom_data_path",
+        "tabular_asr_dataset_path",
+        "tabular_asr_dataset_with_split_path",
+    ],
 )
 def test_load_proc_dataset_after_init_processing(
     dataset_id,
@@ -86,3 +91,38 @@ def test_process_local_dataset(custom_dataset_half_split, tmp_path):
     assert -100 < result["train"][0]["input_features"][0][-1] < 100
     assert -100 < result["test"][-1]["input_features"][-1][10] < 100
     assert -100 < result["test"][-1]["input_features"][-1][-1] < 100
+
+
+def test_load_proc_dataset_after_init_processing_with_test_size(
+    tabular_asr_dataset_path,
+    mock_whisper_processor,
+):
+    dataset_id = tabular_asr_dataset_path
+    test_size = 1
+
+    dataset, proc_dataset_dir = load_dataset_from_dataset_id(
+        dataset_id=dataset_id,
+        test_size=test_size,
+    )
+    shutil.rmtree(proc_dataset_dir, ignore_errors=True)
+
+    assert (
+        try_find_processed_version(dataset_id=dataset_id, test_size=test_size) is None
+    )
+
+    process_dataset_for_whisper(
+        dataset=dataset,
+        processor=mock_whisper_processor,
+        batch_size=1,
+        proc_dataset_path=proc_dataset_dir,
+        num_proc=None,
+    )
+
+    cached_dataset = try_find_processed_version(
+        dataset_id=dataset_id,
+        test_size=test_size,
+    )
+
+    assert isinstance(cached_dataset, DatasetDict)
+
+    shutil.rmtree(proc_dataset_dir)

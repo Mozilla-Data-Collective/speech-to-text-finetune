@@ -1,6 +1,10 @@
+from pathlib import Path
+
+import pandas as pd
 import pytest
 from datasets import DatasetDict, Dataset
 
+import speech_to_text_finetune.data_process as data_process
 from speech_to_text_finetune.data_process import (
     load_dataset_from_dataset_id,
     load_subset_of_dataset,
@@ -34,6 +38,156 @@ def test_load_dataset_from_dataset_id_local_cv(local_common_voice_data_path):
 def test_load_dataset_from_dataset_id_custom(custom_data_path):
     dataset, _ = load_dataset_from_dataset_id(dataset_id=custom_data_path)
     _assert_proper_dataset(dataset)
+
+
+def test_load_dataset_from_dataset_id_tabular_asr_dataset(tabular_asr_dataset_path):
+    dataset, _ = load_dataset_from_dataset_id(dataset_id=tabular_asr_dataset_path)
+
+    _assert_proper_dataset(dataset)
+    assert len(dataset["train"]) == 3
+    assert len(dataset["test"]) == 2
+    assert set(dataset["train"].column_names) == {"audio", "sentence"}
+    assert set(dataset["test"].column_names) == {"audio", "sentence"}
+    assert dataset["train"][0]["audio"].startswith("/")
+
+
+def test_load_dataset_from_dataset_id_tabular_asr_dataset_with_float_test_size(
+    tabular_asr_dataset_path,
+):
+    dataset, proc_dataset_path = load_dataset_from_dataset_id(
+        dataset_id=tabular_asr_dataset_path,
+        test_size=0.4,
+    )
+
+    _assert_proper_dataset(dataset)
+    assert len(dataset["train"]) == 3
+    assert len(dataset["test"]) == 2
+    assert proc_dataset_path.name == "processed_version_test_size_0_4"
+
+
+def test_load_dataset_from_dataset_id_tabular_asr_dataset_with_int_test_size(
+    tabular_asr_dataset_path,
+):
+    dataset, proc_dataset_path = load_dataset_from_dataset_id(
+        dataset_id=tabular_asr_dataset_path,
+        test_size=1,
+    )
+
+    _assert_proper_dataset(dataset)
+    assert len(dataset["train"]) == 4
+    assert len(dataset["test"]) == 1
+    assert proc_dataset_path.name == "processed_version_test_size_1"
+
+
+def test_load_dataset_from_dataset_id_tabular_asr_dataset_with_split(
+    tabular_asr_dataset_with_split_path,
+):
+    dataset, _ = load_dataset_from_dataset_id(
+        dataset_id=tabular_asr_dataset_with_split_path
+    )
+
+    _assert_proper_dataset(dataset)
+    assert len(dataset["train"]) == 3
+    assert len(dataset["test"]) == 2
+    assert set(dataset["train"].column_names) == {"audio", "sentence"}
+    assert set(dataset["test"].column_names) == {"audio", "sentence"}
+
+
+def test_load_dataset_from_dataset_id_tabular_asr_csv_file(
+    tabular_asr_dataset_file_path,
+):
+    dataset, proc_dataset_path = load_dataset_from_dataset_id(
+        dataset_id=tabular_asr_dataset_file_path
+    )
+
+    _assert_proper_dataset(dataset)
+    assert len(dataset["train"]) == 3
+    assert len(dataset["test"]) == 2
+    assert proc_dataset_path.name == "processed_version"
+    assert proc_dataset_path.parent.name == "tabular_asr_dataset_file"
+
+
+def test_load_dataset_from_dataset_id_tabular_asr_dataset_rejects_relative_audio_path(
+    tmp_path,
+):
+    dataset_dir = tmp_path / "relative_tabular_asr_dataset"
+    dataset_dir.mkdir(parents=True)
+    pd.DataFrame(
+        {
+            "audio_path": ["clips/example.wav", "clips/example_2.wav"],
+            "transcription": ["sample 1", "sample 2"],
+        }
+    ).to_csv(dataset_dir / "dataset.csv", index=False)
+
+    with pytest.raises(ValueError, match="absolute audio_path"):
+        load_dataset_from_dataset_id(dataset_id=str(dataset_dir))
+
+
+def test_load_dataset_from_dataset_id_mdc_generic_asr(
+    monkeypatch, tmp_path, custom_data_path
+):
+    source_audio_file = next((Path(custom_data_path) / "train" / "clips").glob("*.wav"))
+
+    dataset_df = pd.DataFrame(
+        {
+            "audio_path": [
+                str(source_audio_file.resolve()),
+                str(source_audio_file.resolve()),
+            ],
+            "transcription": ["mdc train", "mdc test"],
+            "split": ["train", "test"],
+            "topic": ["culture", "culture"],
+        }
+    )
+
+    monkeypatch.setenv("MDC_API_KEY", "dummy-key")
+    monkeypatch.setattr(
+        data_process,
+        "_load_mdc_dataframe",
+        lambda dataset_id: dataset_df,
+    )
+
+    dataset, proc_dataset_path = load_dataset_from_dataset_id(
+        dataset_id="mozilla/common-voice-like-mdc"
+    )
+
+    _assert_proper_dataset(dataset)
+    assert len(dataset["train"]) == 1
+    assert len(dataset["test"]) == 1
+    assert dataset["train"][0]["sentence"] == "mdc train"
+    assert dataset["test"][0]["sentence"] == "mdc test"
+    assert dataset["train"][0]["audio"] == str(source_audio_file.resolve())
+    assert proc_dataset_path == Path(
+        "artifacts/mozilla_common-voice-like-mdc/processed_version"
+    )
+
+
+def test_try_find_processed_version_uses_test_size_specific_cache(
+    tabular_asr_dataset_path,
+    mock_whisper_processor,
+):
+    dataset, proc_dataset_dir = load_dataset_from_dataset_id(
+        dataset_id=tabular_asr_dataset_path,
+        test_size=1,
+    )
+    process_dataset_for_whisper(
+        dataset=dataset,
+        processor=mock_whisper_processor,
+        batch_size=1,
+        proc_dataset_path=proc_dataset_dir,
+        num_proc=None,
+    )
+
+    cached_dataset = try_find_processed_version(
+        dataset_id=tabular_asr_dataset_path,
+        test_size=1,
+    )
+    default_cached_dataset = try_find_processed_version(
+        dataset_id=tabular_asr_dataset_path
+    )
+
+    assert isinstance(cached_dataset, DatasetDict)
+    assert default_cached_dataset is None
 
 
 def test_load_subset_of_dataset_train(custom_dataset_half_split):

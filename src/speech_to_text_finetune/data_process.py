@@ -5,17 +5,21 @@ from typing import Dict, List, Tuple, Union
 
 import pandas as pd
 import torch
-from datacollective import DataCollective
-from datasets import Audio, Dataset, DatasetDict, load_dataset, load_from_disk
+from datacollective import load_dataset
+from datasets import load_dataset as load_hf_dataset
+from datasets import Audio, Dataset, DatasetDict, load_from_disk
 from dotenv import load_dotenv
 from loguru import logger
+from sklearn.model_selection import train_test_split
 from transformers import WhisperProcessor, Wav2Vec2Processor
 
 from speech_to_text_finetune.config import PROC_DATASET_DIR
 
 
 def try_find_processed_version(
-    dataset_id: str, language_id: str | None = None
+    dataset_id: str,
+    language_id: str | None = None,
+    test_size: float | int | None = None,
 ) -> DatasetDict | Dataset | None:
     """
     Try to load a processed version of the dataset if it exists locally. Check if:
@@ -37,11 +41,11 @@ def try_find_processed_version(
         else:
             raise FileNotFoundError("Processed dataset is incomplete.")
 
-    proc_dataset_path = _get_local_proc_dataset_path(dataset_id)
+    proc_dataset_path = _get_local_proc_dataset_path(dataset_id, test_size=test_size)
     if Path(proc_dataset_path).is_dir():
         return load_from_disk(proc_dataset_path)
 
-    mdc_proc_dataset_path = _get_mdc_proc_dataset_path(dataset_id)
+    mdc_proc_dataset_path = _get_mdc_proc_dataset_path(dataset_id, test_size=test_size)
     if Path(mdc_proc_dataset_path).is_dir():
         logger.info(
             f"Found processed dataset version at {mdc_proc_dataset_path} of MDC dataset {dataset_id}. "
@@ -60,8 +64,12 @@ def try_find_processed_version(
     return None
 
 
-def _get_mdc_proc_dataset_path(dataset_id: str) -> Path:
-    return Path(f"./artifacts/{dataset_id.replace('/', '_')}/{PROC_DATASET_DIR}")
+def _get_mdc_proc_dataset_path(
+    dataset_id: str, test_size: float | int | None = None
+) -> Path:
+    return Path(
+        f"./artifacts/{dataset_id.replace('/', '_')}/{_get_proc_dataset_dir_name(test_size)}"
+    )
 
 
 def _get_hf_proc_dataset_path(dataset_id: str, language_id: str | None) -> str:
@@ -72,11 +80,26 @@ def _get_hf_proc_dataset_path(dataset_id: str, language_id: str | None) -> str:
     return hf_proc_path
 
 
-def _get_local_proc_dataset_path(dataset_id: str) -> Path:
-    return Path(dataset_id).resolve() / PROC_DATASET_DIR
+def _get_local_proc_dataset_path(
+    dataset_id: str, test_size: float | int | None = None
+) -> Path:
+    dataset_path = Path(dataset_id).resolve()
+    if dataset_path.is_file():
+        return dataset_path.parent / _get_proc_dataset_dir_name(test_size)
+    return dataset_path / _get_proc_dataset_dir_name(test_size)
 
 
-def load_dataset_from_dataset_id(dataset_id: str) -> Tuple[DatasetDict, Path]:
+def _get_proc_dataset_dir_name(test_size: float | int | None = None) -> str:
+    if test_size is None:
+        return PROC_DATASET_DIR
+
+    normalized_test_size = str(test_size).replace(".", "_")
+    return f"{PROC_DATASET_DIR}_test_size_{normalized_test_size}"
+
+
+def load_dataset_from_dataset_id(
+    dataset_id: str, test_size: float | int | None = None
+) -> Tuple[DatasetDict, Path]:
     """
     This function loads a dataset, based on the dataset_id and the content of its directory (if it is a local path).
     Possible cases:
@@ -88,6 +111,11 @@ def load_dataset_from_dataset_id(dataset_id: str) -> Tuple[DatasetDict, Path]:
 
     Args:
         dataset_id: Path to a processed dataset directory or local dataset directory or MDC dataset ID.
+        test_size: Optional test_size to use when loading the dataset.
+            Only applicable for MDC and tabular ASR datasets that
+            don't already contain a usable train/test split.
+            If not provided, defaults to None, which means that the default test size of 0.2
+            will be used when creating a train/test split.
 
     Returns:
         DatasetDict: A processed dataset ready for training with train/test splits
@@ -98,18 +126,15 @@ def load_dataset_from_dataset_id(dataset_id: str) -> Tuple[DatasetDict, Path]:
     """
 
     try:
-        dataset = _load_mdc_common_voice(dataset_id)
-        return dataset, _get_mdc_proc_dataset_path(dataset_id)
-    except InvalidCommonVoiceDatasetError:
-        # This means the dataset was found on MDC but isn't a Common Voice dataset;
-        raise
+        dataset = _load_mdc_dataset(dataset_id, test_size=test_size)
+        return dataset, _get_mdc_proc_dataset_path(dataset_id, test_size=test_size)
     except Exception as e:
         # MDC load failed (dataset not present on MDC or transient MDC error) — try next loaders.
         logger.debug(f"MDC load skipped for {dataset_id}: \n{e}")
 
     try:
         dataset = _load_local_common_voice(dataset_id)
-        return dataset, _get_local_proc_dataset_path(dataset_id)
+        return dataset, _get_local_proc_dataset_path(dataset_id, test_size=test_size)
     except FileNotFoundError:
         # Not a local Common Voice dataset — try next loader.
         pass
@@ -118,8 +143,8 @@ def load_dataset_from_dataset_id(dataset_id: str) -> Tuple[DatasetDict, Path]:
         pass
 
     try:
-        dataset = _load_custom_dataset(dataset_id)
-        return dataset, _get_local_proc_dataset_path(dataset_id)
+        dataset = _load_custom_dataset(dataset_id, test_size=test_size)
+        return dataset, _get_local_proc_dataset_path(dataset_id, test_size=test_size)
     except FileNotFoundError:
         pass
 
@@ -132,14 +157,18 @@ def load_dataset_from_dataset_id(dataset_id: str) -> Tuple[DatasetDict, Path]:
     )
 
 
-def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
+def _load_mdc_dataset(
+    dataset_id: str, test_size: float | int | None = None
+) -> DatasetDict:
     """
-    Shared loader for MDC-hosted Common Voice (SPS/SCS).
-    Load MDC dataset once and return a single DataFrame with `splits`,
-    the audio base directory and the audio column name.
+    Load a dataset from MDC and normalize it into the train/test format
+    expected by the fine-tuning scripts.
+
+    Valid MDC ASR datasets are expected to be tabular ASR datasets containing
+    `audio_path` and `transcription`, and optionally `split`.
 
     Args:
-        dataset_id: official Common Voice dataset id from the Mozilla Data Collective
+        dataset_id: dataset id from the Mozilla Data Collective
 
     Returns:
         DatasetDict: HF Dataset dictionary that consists of two distinct Datasets
@@ -151,35 +180,24 @@ def _load_mdc_common_voice(dataset_id: str) -> DatasetDict:
             "MDC_API_KEY environment variable not set. "
             "Please set it to access Mozilla Data Collective datasets."
         )
-    mdc_client = DataCollective()
-    dataset = mdc_client.load_dataset(dataset_id)
-    dataset_df = dataset.to_pandas()
-    dataset_details = mdc_client.get_dataset_details(dataset_id)
-    data_dir = Path(dataset.corpus_filepath)
 
-    if "spontaneous" in dataset_details["name"].lower():
-        is_spontaneous_speech = True
-    elif "scripted" in dataset_details["name"].lower():
-        is_spontaneous_speech = False
-    else:
-        raise InvalidCommonVoiceDatasetError(
-            "Could not determine if MDC Common Voice dataset is SPS or SCS. "
-            "Dataset does not seem to be part of Common Voice collection."
+    dataset_df = load_dataset(dataset_id)
+    if not _is_valid_asr_dataset(dataset_df):
+        raise ValueError(
+            "Unsupported MDC dataset format. Expected an ASR dataset with "
+            "`audio_path` and `transcription` columns."
         )
 
-    if is_spontaneous_speech:
-        audio_dir = data_dir / "audios"
-        audio_clip_column = "audio_file"
-    else:
-        audio_dir = data_dir / "clips"
-        audio_clip_column = "path"
-
-    return _build_cv_dataset_from_df(
+    return _build_asr_dataset_from_df(
         dataset_df=dataset_df,
-        audio_dir=audio_dir,
-        audio_clip_column=audio_clip_column,
-        is_spontaneous_speech=is_spontaneous_speech,
+        audio_clip_column="audio_path",
+        text_column="transcription",
+        test_size=test_size,
     )
+
+
+def _is_valid_asr_dataset(dataset_df: pd.DataFrame) -> bool:
+    return {"audio_path", "transcription"}.issubset(dataset_df.columns)
 
 
 def _check_if_local_common_voice_is_spontaneous(cv_data_dir: Path) -> bool:
@@ -215,6 +233,10 @@ def _load_local_common_voice(cv_data_dir: str) -> DatasetDict:
     - SCS: read `train.tsv`, `dev.tsv`, `test.tsv` and add a `splits` column
     """
     cv_data_dir = Path(cv_data_dir)
+    if not cv_data_dir.is_dir():
+        raise FileNotFoundError(
+            "Local Common Voice datasets must be provided as a directory."
+        )
 
     is_spontaneous_speech = _check_if_local_common_voice_is_spontaneous(cv_data_dir)
 
@@ -275,7 +297,7 @@ def _build_cv_dataset_from_df(
 
     # Ensure we have splits
     if "split" not in df.columns:
-        raise ValueError("Expected a 'splits' column in the dataset DataFrame.")
+        raise ValueError("Expected a 'split' column in the dataset DataFrame.")
 
     # Convert relative to absolute audio paths
     df = _replace_rel_path_with_abs_path(
@@ -294,26 +316,179 @@ def _build_cv_dataset_from_df(
     )
 
 
-def _join_audio_path(audio_dir: Path, rel_path: str) -> str:
+def _build_asr_dataset_from_df(
+    dataset_df: pd.DataFrame,
+    audio_clip_column: str = "audio_path",
+    text_column: str = "transcription",
+    test_size: float | int | None = None,
+) -> DatasetDict:
     """
-    Safely join base audio directory with the relative file path.
+    Build a DatasetDict from a tabular ASR dataset.
+    Keeps only the audio path and transcription columns, normalizes them to
+    `audio` and `sentence`, and ensures train/test splits exist.
+    """
+    missing_columns = {
+        column
+        for column in [audio_clip_column, text_column]
+        if column not in dataset_df.columns
+    }
+    if missing_columns:
+        raise ValueError(
+            "Dataset is missing the required columns: "
+            + ", ".join(sorted(missing_columns))
+        )
+
+    df = dataset_df.copy()
+    df = df.rename(columns={text_column: "sentence"})
+    df = _ensure_train_test_split(df, test_size=test_size)
+    df = _rename_audio_column(df=df, audio_clip_column=audio_clip_column)
+
+    train_df = df[df["split"] == "train"][["audio", "sentence"]]
+    test_df = df[df["split"] == "test"][["audio", "sentence"]]
+
+    return DatasetDict(
+        {
+            "train": Dataset.from_pandas(train_df, preserve_index=False),
+            "test": Dataset.from_pandas(test_df, preserve_index=False),
+        }
+    )
+
+
+def _ensure_train_test_split(
+    df: pd.DataFrame,
+    split_column: str = "split",
+    test_size: float | int | None = None,
+) -> pd.DataFrame:
+    """
+    Normalize an optional split column into train/test.
+    If no usable split column exists, create one with sklearn's train_test_split.
+    """
+    if df.empty:
+        raise ValueError("Dataset is empty.")
+
+    fallback_df = df.drop(columns=[split_column], errors="ignore")
+    if split_column not in df.columns:
+        return _split_train_test(df, split_column=split_column, test_size=test_size)
+
+    normalized_split = df[split_column].fillna("").astype(str).str.strip().str.lower()
+    if normalized_split.eq("").all():
+        return _split_train_test(
+            fallback_df, split_column=split_column, test_size=test_size
+        )
+
+    split_map = {
+        "train": "train",
+        "dev": "train",
+        "val": "train",
+        "valid": "train",
+        "validation": "train",
+        "test": "test",
+        "eval": "test",
+        "evaluation": "test",
+    }
+    mapped_split = normalized_split.map(split_map)
+    invalid_splits = sorted(set(normalized_split[mapped_split.isna()]))
+    if invalid_splits:
+        raise ValueError(
+            "Unsupported split values found in dataset: " + ", ".join(invalid_splits)
+        )
+
+    df = df.copy()
+    df[split_column] = mapped_split
+
+    if len(df) == 1:
+        df[split_column] = "train"
+        return df
+
+    if {"train", "test"}.issubset(set(mapped_split)):
+        return df
+
+    logger.warning(
+        "Dataset split column did not define both train and test splits. "
+        "Falling back to sklearn train_test_split."
+    )
+    return _split_train_test(
+        fallback_df, split_column=split_column, test_size=test_size
+    )
+
+
+def _split_train_test(
+    df: pd.DataFrame,
+    split_column: str = "split",
+    test_size: float | int | None = None,
+) -> pd.DataFrame:
+    if len(df) == 1:
+        return df.assign(**{split_column: "train"})
+
+    try:
+        train_df, test_df = train_test_split(df, test_size=test_size, random_state=42)
+    except ValueError as exc:
+        raise ValueError(
+            f"Could not create a train/test split with test_size={test_size!r}."
+        ) from exc
+
+    return pd.concat(
+        [
+            train_df.assign(**{split_column: "train"}),
+            test_df.assign(**{split_column: "test"}),
+        ],
+        ignore_index=True,
+    )
+
+
+def _rename_audio_column(df: pd.DataFrame, audio_clip_column: str) -> pd.DataFrame:
+    """
+    Rename the audio column to `audio` for tabular ASR datasets whose
+    `audio_path` values are already absolute paths.
+    """
+    df = df.rename(columns={audio_clip_column: "audio"})
+    if df["audio"].isna().any() or df["audio"].astype(str).str.strip().eq("").any():
+        raise ValueError("Audio path cannot be empty.")
+    if not df["audio"].astype(str).map(os.path.isabs).all():
+        raise ValueError(
+            "Tabular ASR datasets must provide absolute audio_path values."
+        )
+    return df
+
+
+def _join_audio_path(
+    audio_dir: Path | List[Path] | Tuple[Path, ...], rel_path: str
+) -> str:
+    """
+    Safely join one or more base audio directories with the relative file path.
     Keeps absolute paths as-is and resolves the result.
     """
+    if pd.isna(rel_path) or not str(rel_path).strip():
+        raise ValueError("Audio path cannot be empty.")
+
     p = str(rel_path)
     if os.path.isabs(p):
-        return p
-    return str((audio_dir / p).resolve())
+        return str(Path(p).resolve())
+
+    bases = audio_dir if isinstance(audio_dir, (list, tuple)) else [audio_dir]
+    resolved_candidates = [(Path(base) / p).resolve() for base in bases]
+    for candidate in resolved_candidates:
+        if candidate.exists():
+            return str(candidate)
+
+    return str(resolved_candidates[0])
 
 
 def _replace_rel_path_with_abs_path(
-    df: pd.DataFrame, audio_dir: str | Path, audio_clip_column: str
+    df: pd.DataFrame,
+    audio_dir: str | Path | List[str | Path] | Tuple[str | Path, ...],
+    audio_clip_column: str,
 ) -> pd.DataFrame:
     """
     Rename the audio column and convert relative file paths to absolute paths.
     """
     df = df.rename(columns={audio_clip_column: "audio"})
-    base = Path(audio_dir)
-    df["audio"] = df["audio"].apply(lambda p: _join_audio_path(base, p))
+    if isinstance(audio_dir, (str, Path)):
+        base_dirs: List[Path] = [Path(audio_dir)]
+    else:
+        base_dirs = [Path(base_dir) for base_dir in audio_dir]
+
+    df["audio"] = df["audio"].apply(lambda p: _join_audio_path(base_dirs, p))
     return df
 
 
@@ -327,7 +502,9 @@ def _get_audio_files_from_dir(dataset_dir: Path) -> List[str]:
     )
 
 
-def _load_custom_dataset(dataset_dir: str) -> DatasetDict:
+def _load_custom_dataset(
+    dataset_dir: str, test_size: float | int | None = None
+) -> DatasetDict:
     """
     Load sentences and accompanied recorded audio files into a pandas DataFrame, then split into train/test and finally
     load it into two distinct train Dataset and test Dataset.
@@ -340,22 +517,97 @@ def _load_custom_dataset(dataset_dir: str) -> DatasetDict:
     Returns:
         DatasetDict: HF Dataset dictionary that consists of two distinct Datasets (train+validation and test)
     """
-    train_file = dataset_dir + "/train/text.csv"
-    train_dir = Path(dataset_dir + "/train/clips")
-    test_file = dataset_dir + "/test/text.csv"
-    test_dir = Path(dataset_dir + "/test/clips")
+    dataset_path = Path(dataset_dir)
 
-    train_df = pd.read_csv(train_file)
-    test_df = pd.read_csv(test_file)
+    if _has_legacy_custom_dataset_structure(dataset_path):
+        train_file = dataset_path / "train" / "text.csv"
+        train_dir = dataset_path / "train" / "clips"
+        test_file = dataset_path / "test" / "text.csv"
+        test_dir = dataset_path / "test" / "clips"
 
-    train_df["audio"] = _get_audio_files_from_dir(train_dir)
-    test_df["audio"] = _get_audio_files_from_dir(test_dir)
+        train_df = pd.read_csv(train_file)
+        test_df = pd.read_csv(test_file)
 
-    return DatasetDict(
-        {
-            "train": Dataset.from_pandas(train_df),
-            "test": Dataset.from_pandas(test_df),
-        }
+        train_df["audio"] = _get_audio_files_from_dir(train_dir)
+        test_df["audio"] = _get_audio_files_from_dir(test_dir)
+
+        return DatasetDict(
+            {
+                "train": Dataset.from_pandas(
+                    train_df[["audio", "sentence"]], preserve_index=False
+                ),
+                "test": Dataset.from_pandas(
+                    test_df[["audio", "sentence"]], preserve_index=False
+                ),
+            }
+        )
+
+    tabular_dataset_path = _get_custom_tabular_dataset_path(dataset_path)
+    if tabular_dataset_path is None:
+        raise FileNotFoundError(
+            "Could not find a supported local dataset format. Expected either the "
+            "legacy train/test layout or a tabular file with `audio_path` and `transcription` columns."
+        )
+
+    dataset_df = _read_tabular_dataset(tabular_dataset_path)
+
+    return _build_asr_dataset_from_df(
+        dataset_df=dataset_df,
+        audio_clip_column="audio_path",
+        text_column="transcription",
+        test_size=test_size,
+    )
+
+
+def _has_legacy_custom_dataset_structure(dataset_path: Path) -> bool:
+    return dataset_path.is_dir() and all(
+        required_path.exists()
+        for required_path in [
+            dataset_path / "train" / "text.csv",
+            dataset_path / "train" / "clips",
+            dataset_path / "test" / "text.csv",
+            dataset_path / "test" / "clips",
+        ]
+    )
+
+
+def _get_custom_tabular_dataset_path(dataset_path: Path) -> Path | None:
+    if dataset_path.is_file():
+        try:
+            dataset_df = _read_tabular_dataset(dataset_path)
+        except ValueError:
+            return None
+        return dataset_path if _is_valid_asr_dataset(dataset_df) else None
+
+    if not dataset_path.is_dir():
+        return None
+
+    candidate_paths = sorted(
+        file_path
+        for file_path in dataset_path.iterdir()
+        if file_path.is_file()
+        and file_path.suffix.lower() in {".csv", ".tsv", ".parquet"}
+    )
+    for candidate_path in candidate_paths:
+        dataset_df = _read_tabular_dataset(candidate_path)
+        if _is_valid_asr_dataset(dataset_df):
+            return candidate_path
+
+    return None
+
+
+def _read_tabular_dataset(dataset_path: Path) -> pd.DataFrame:
+    suffix = dataset_path.suffix.lower()
+    if suffix == ".csv":
+        return pd.read_csv(dataset_path)
+    if suffix == ".tsv":
+        return pd.read_csv(dataset_path, sep="\t")
+    if suffix == ".parquet":
+        return pd.read_parquet(dataset_path)
+
+    raise ValueError(
+        f"Unsupported dataset file format: {dataset_path.suffix}. "
+        "Supported formats are .csv, .tsv and .parquet."
     )
 
 
@@ -381,7 +633,7 @@ def load_and_proc_hf_fleurs(
     if proc_dataset := try_find_processed_version(fleurs_dataset_id, language_id):
         return proc_dataset
 
-    dataset = load_dataset(
+    dataset = load_hf_dataset(
         fleurs_dataset_id, language_id, split="test", revision="refs/convert/parquet"
     )
     dataset = load_subset_of_dataset(dataset, n_test_samples)
@@ -576,9 +828,3 @@ class DataCollatorCTCWithPadding:
         )
         batch["labels"] = labels
         return batch
-
-
-class InvalidCommonVoiceDatasetError(ValueError):
-    """Raised when an MDC Common Voice dataset cannot be classified as SPS or SCS."""
-
-    pass
