@@ -338,17 +338,6 @@ def _build_asr_dataset_from_df(
     Keeps only the audio path and transcription columns, normalizes them to
     `audio` and `sentence`, and ensures train/test splits exist.
     """
-    missing_columns = {
-        column
-        for column in [audio_clip_column, text_column]
-        if column not in dataset_df.columns
-    }
-    if missing_columns:
-        raise ValueError(
-            "Dataset is missing the required columns: "
-            + ", ".join(sorted(missing_columns))
-        )
-
     df = dataset_df.copy()
     df = df.rename(columns={text_column: "sentence"})
     df = _ensure_train_test_split(df, test_size=test_size)
