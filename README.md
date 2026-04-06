@@ -119,6 +119,12 @@ You can either load Common Voice via the Mozilla Data Collective Python SDK dire
 > [!NOTE]
 > To enable downloads via Python API, you must accept the terms and conditions of the dataset you will be using on the MDC platform.
 
+##### MDC notebook example
+
+For a notebook-based walkthrough of the full MDC flow - GPU check, API key entry, dataframe preview, Whisper-ready normalization, config generation, and the final `run_finetuning(config_path="config.yaml")` step - open:
+
+`demo/mdc_khmer.ipynb`
+
 #### Option B: Use a locally downloaded Common Voice dataset
 
 1. Download the dataset of your choice from https://datacollective.mozillafoundation.org/datasets.

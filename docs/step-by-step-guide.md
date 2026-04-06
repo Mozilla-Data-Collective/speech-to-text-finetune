@@ -83,7 +83,8 @@ Pick one of the following:
 - Option A: Mozilla Data Collective Python SDK
   1. Ensure `.env` contains a valid `MDC_API_KEY`  under the `src/speech_to_text_finetune` directory.
   2. Find the MDC dataset id for your language (Scripted or Spontaneous).
-  3. Configure `config.yaml` with the MDC dataset id:
+  3. If you want an interactive notebook walkthrough for an MDC dataset, open `demo/mdc_khmer.ipynb` and run the cells in order.
+  4. Configure `config.yaml` with the MDC dataset id:
      ```bash
      model_id: openai/whisper-tiny
      dataset_id: <mdc_dataset_id>
@@ -95,7 +96,7 @@ Pick one of the following:
        hub_private_repo: True
        ...
      ```
-  4. Finetune:
+  5. Finetune:
      ```bash
      python src/speech_to_text_finetune/finetune_whisper.py
      ```

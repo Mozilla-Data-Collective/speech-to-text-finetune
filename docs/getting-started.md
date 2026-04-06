@@ -41,6 +41,12 @@ Get started with Speech-to-text-finetune Blueprint using one of the options belo
       python src/speech_to_text_finetune/finetune_whisper.py
       ```
 
+      To follow the interactive Khmer MDC notebook workflow:
+
+      ```bash
+      jupyter notebook demo/mdc_khmer.ipynb
+      ```
+
 === "💻 Local Installation"
 
       To install the project locally:
@@ -72,6 +78,12 @@ Get started with Speech-to-text-finetune Blueprint using one of the options belo
 
       ```bash
       python src/speech_to_text_finetune/finetune_whisper.py
+      ```
+
+      To follow the interactive Khmer MDC notebook workflow:
+
+      ```bash
+      jupyter notebook demo/mdc_khmer.ipynb
       ```
 
 
