@@ -25,7 +25,7 @@ dependencies = [
 
 
 [tool.uv.sources]
-datacollective = { git = "https://github.com/Mozilla-Data-Collective/datacollective-python", rev = "8ef57dc30475dd14761eea6c6890d5989e49f7dc" }
+datacollective = { git = "https://github.com/Mozilla-Data-Collective/datacollective-python", rev = "b32863735185e56fa6e121e1f99b8de7cfede3ee" }
 
 [dependency-groups]
 demo = [
@@ -41,6 +41,7 @@ docs = [
 ]
 
 tests = [
+  "pre-commit",
   "pytest>=8,<9",
   "pytest-sugar>=0.9.6",
 ]
