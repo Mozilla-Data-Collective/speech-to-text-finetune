@@ -29,6 +29,8 @@ datacollective = { git = "https://github.com/Mozilla-Data-Collective/datacollect
 
 [dependency-groups]
 demo = [
+  "python-dotenv",
+  "pyyaml",
   "ipykernel>=7.2.0",
   "scikit-learn>=1.5.0",
   "ydata-profiling>=4.18.1",
