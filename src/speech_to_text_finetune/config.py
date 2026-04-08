@@ -48,7 +48,8 @@ class Config(BaseModel):
         n_test_samples: explicitly set how many samples to evaluate on. If -1, use all eval data available
         download_directory: local directory where MDC datasets should be downloaded before processing.
             Only used when dataset_id points to an MDC dataset id.
-        test_size: optional train/test split size for tabular ASR datasets that do not already define both splits.
+        test_size: optional train/test split size for tabular ASR or MDC ASR datasets when the loader
+            needs to create a split. Ignored if the dataset already defines both train and test splits.
             Follows sklearn.model_selection.train_test_split semantics.
         training_hp: store selective hyperparameter values from Seq2SeqTrainingArguments
     """

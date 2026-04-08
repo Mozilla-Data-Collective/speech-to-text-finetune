@@ -47,8 +47,8 @@ If your dataset is a local `.csv`, `.tsv`, or `.parquet` file (or a directory co
 - keep only the audio path and transcription columns
 - ignore extra metadata columns such as `topic`, `speaker_id`, or `paragraph_id`
 - expect `audio_path` to already contain an absolute path to the audio file
-- use a `split` column if it already exists
-- otherwise create a train/test split using `sklearn.model_selection.train_test_split`
+- preserve a `split` column if it already defines both train and test data
+- otherwise create a fresh train/test split using `sklearn.model_selection.train_test_split`
 
 As an example, lets consider that you have a directory with a csv file and all the audio clips like this:
 
@@ -73,11 +73,21 @@ audio_path,transcription,topic,speaker_id
 /home/user/datasets/my_dataset/clips/example_n.mp3,"This is yet another example",culture,speaker_n
 ```
 
-Optionally, you can also provide a `split` column with values like `train`, `dev`, `validation`, `test`, or `eval`. If both train and test are already defined, that split will be preserved.
+Optionally, you can also provide a `split` column with values like `train`, `dev`, `val`, `valid`, `validation`, `test`, `eval`, or `evaluation`.
+
+### How `test_size` is applied
+
+- If your dataset already defines both train and test rows, that split is preserved and `test_size` is ignored.
+- `dev`, `val`, `valid`, and `validation` are treated as training data.
+- `test`, `eval`, and `evaluation` are treated as test data.
+- If the `split` column is missing, empty, or only defines one side of the split, the loader creates a fresh train/test split over the full dataset.
+- In that case, `test_size` is passed directly to `sklearn.model_selection.train_test_split`.
+- If `test_size` is `null`, scikit-learn's default split size is used.
+- For datasets that already come with fixed splits, such as Common Voice or the legacy `train/` + `test/` custom dataset layout, the existing split is preserved and `test_size` is ignored.
 
 ### Step 3: Update your config file
 
-Point `dataset_id` to either the dataset directory or directly to the dataset file. If your dataset does **not** already define a `split` column with both train and test rows, you can control the generated test split with `test_size`. If you are using an MDC dataset id instead of a local path, you can also set `download_directory` to choose where the raw dataset should be downloaded.
+Point `dataset_id` to either the dataset directory or directly to the dataset file. `test_size` is only used when the loader needs to create a train/test split. If your dataset already defines both train and test rows, that split is preserved and `test_size` is ignored. If your dataset does not define a complete split, a fresh split is created from all rows using `test_size` or, when `test_size: null`, scikit-learn's default behavior. If you are using an MDC dataset id instead of a local path, you can also set `download_directory` to choose where the raw dataset should be downloaded.
 
 ```
 model_id: openai/whisper-tiny
@@ -87,7 +97,7 @@ repo_name: default
 download_directory: ""  # Only used for MDC dataset ids
 n_train_samples: -1
 n_test_samples: -1
-test_size: 0.2
+test_size: 0.2  # Only used when the loader needs to create a test split
 
 training_hp:
   push_to_hub: False

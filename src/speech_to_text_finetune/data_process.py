@@ -116,8 +116,9 @@ def load_dataset_from_dataset_id(
         test_size: Optional test_size to use when loading the dataset.
             Only applicable for MDC and tabular ASR datasets that
             don't already contain a usable train/test split.
-            If not provided, defaults to None, which means that the default test size of 0.2
-            will be used when creating a train/test split.
+            Ignored if the dataset already defines both train and test splits.
+            If not provided, sklearn.model_selection.train_test_split uses its default behavior
+            when creating a train/test split.
         download_directory: Local directory used by the MDC SDK when downloading
             datasets referenced by MDC dataset IDs.
 
