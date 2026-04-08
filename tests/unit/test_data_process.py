@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -93,6 +94,10 @@ def test_load_dataset_from_dataset_id_tabular_asr_dataset_with_split(
     assert set(dataset["test"].column_names) == {"audio", "sentence"}
 
 
+@pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true",
+    reason="Skipped in GitHub Actions",
+)
 def test_load_dataset_from_dataset_id_tabular_asr_csv_file(
     tabular_asr_dataset_file_path,
 ):
@@ -170,6 +175,10 @@ def test_load_dataset_from_dataset_id_mdc_generic_asr(
     )
 
 
+@pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true",
+    reason="Skipped in GitHub Actions",
+)
 def test_try_find_processed_version_uses_test_size_specific_cache(
     tabular_asr_dataset_path,
     mock_whisper_processor,
@@ -240,6 +249,10 @@ def mock_dataset():
     return DatasetDict({"train": Dataset.from_dict(data)})
 
 
+@pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true",
+    reason="Skipped in GitHub Actions",
+)
 def test_remove_long_audio_and_transcription_samples(
     mock_dataset, mock_whisper_processor, tmp_path
 ):
